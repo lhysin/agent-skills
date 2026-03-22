@@ -10,7 +10,7 @@
 ## 설치
 
 ```bash
-npx skills add lhysin/agent-skills --skill confluence-docs -a codex -g -y
+npx skills add lhysin/agent-skills --skill confluence-docs -a claude-code -g -y
 
-npx skills add lhysin/agent-skills --skill clean-dead-code -a codex -g -y
+npx skills add lhysin/agent-skills --skill clean-dead-code -a claude-code -g -y
 ```
