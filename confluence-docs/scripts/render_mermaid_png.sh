@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -lt 2 || $# -gt 5 ]]; then
-  printf 'usage: %s <input.mmd|-> <output.png> [theme] [background] [width]\n' "$0" >&2
+if [[ $# -lt 2 || $# -gt 4 ]]; then
+  printf 'usage: %s <input.mmd|-> <output.png> [background] [width]\n' "$0" >&2
   exit 1
 fi
 
@@ -13,9 +13,8 @@ fi
 
 input=$1
 output=$2
-theme=${3:-dark}
-background=${4:-#0b1220}
-width=${5:-2400}
+background=${3:-#0b1220}
+width=${4:-2400}
 
 tmp_input=""
 cleanup() {
@@ -34,6 +33,6 @@ fi
 npx -y @mermaid-js/mermaid-cli \
   -i "$input" \
   -o "$output" \
-  -t "$theme" \
+  -t dark \
   -b "$background" \
   -w "$width"

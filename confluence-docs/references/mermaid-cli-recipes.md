@@ -16,13 +16,13 @@ flowchart TB
 EOF
 ```
 
-## Recommended defaults
+## Defaults (always dark theme)
 
-- theme: `dark`
+- theme: `dark` (forced)
 - background: `#0b1220`
 - width: `2400`
 
-These defaults produce a crisp diagram for Confluence pages and large screenshots, but you can override them per page style.
+These defaults produce a crisp diagram for Confluence pages and large screenshots.
 
 ## Publishing rule
 
