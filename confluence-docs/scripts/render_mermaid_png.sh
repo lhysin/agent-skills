@@ -33,6 +33,6 @@ fi
 npx -y @mermaid-js/mermaid-cli \
   -i "$input" \
   -o "$output" \
-  -t dark \
+  -t RDark \
   -b "$background" \
   -w "$width"

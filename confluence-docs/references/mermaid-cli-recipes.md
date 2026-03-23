@@ -16,9 +16,9 @@ flowchart TB
 EOF
 ```
 
-## Defaults (always dark theme)
+## Defaults (always RDark theme)
 
-- theme: `dark` (forced)
+- theme: `RDark` (forced)
 - background: `#0b1220`
 - width: `2400`
 
