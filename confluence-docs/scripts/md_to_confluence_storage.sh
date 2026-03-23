@@ -45,7 +45,7 @@ output_storage = Path(sys.argv[2])
 
 html = input_html.read_text(encoding="utf-8")
 
-pattern = re.compile(r'<pre><code(?: class="language-([^"]+)")?>(.*?)</code></pre>', re.DOTALL)
+pattern = re.compile(r'<pre class="([^"]+)"><code>(.*?)</code></pre>', re.DOTALL)
 
 
 def replace_code_block(match):
