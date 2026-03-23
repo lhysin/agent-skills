@@ -11,7 +11,7 @@ Use this skill for repeatable Confluence documentation work where the user wants
 
 ## Compatibility
 
-- Expect `confluence` CLI access before making page changes.
+- Use [confluence-cli](https://github.com/pchuri/confluence-cli) for all Confluence operations.
 - Use `pandoc` for Markdown to HTML conversion.
 - Use `python3` inside bundled scripts for deterministic HTML cleanup.
 - Use `npx -y @mermaid-js/mermaid-cli` for Mermaid rendering.
