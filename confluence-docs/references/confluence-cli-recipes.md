@@ -2,6 +2,28 @@
 
 Use this file when you already know which operation you need and just want the exact command shape.
 
+## Authentication
+
+```bash
+confluence login -u <username> -p <password> -u <url>
+confluence login --local
+confluence logout
+```
+
+## Space operations
+
+```bash
+confluence spaces
+confluence space <spaceKey>
+```
+
+## Search
+
+```bash
+confluence search '<query>' --space <spaceKey>
+confluence find '<pageTitle>' --space <spaceKey>
+```
+
 ## Read current state
 
 ```bash
@@ -10,6 +32,7 @@ confluence edit <pageId>
 confluence children <pageId>
 confluence attachments <pageId>
 confluence info <pageId>
+confluence parent <pageId>
 ```
 
 Use `read` when you want the rendered body, and use `edit` when you need the storage-format source or raw editable content.
@@ -17,12 +40,19 @@ Use `read` when you want the rendered body, and use `edit` when you need the sto
 ## Create and update pages
 
 ```bash
+confluence create 'Document title' <spaceKey> -c 'Initial body'
 confluence create-child 'Document title' <parentId> -c 'Initial body'
 confluence update <pageId> -t 'New title'
 confluence update <pageId> -f /tmp/page.storage --format storage
 ```
 
 Prefer a title-only update when the body does not need to change. It lowers the risk of accidental formatting drift.
+
+## Delete pages
+
+```bash
+confluence delete <pageId>
+```
 
 ## Move and back up content
 
@@ -41,6 +71,13 @@ confluence attachments <pageId>
 ```
 
 Keep attachment names stable when replacing a diagram so existing references remain valid.
+
+## Export and import
+
+```bash
+confluence export <pageId> -f /tmp/export.html
+confluence import <spaceKey> -f /tmp/page.html
+```
 
 ## Verify after changes
 
