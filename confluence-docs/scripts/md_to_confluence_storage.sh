@@ -54,6 +54,7 @@ def replace_code_block(match):
     return (
         '<ac:structured-macro ac:name="code">\n'
         f'  <ac:parameter ac:name="language">{language}</ac:parameter>\n'
+        '  <ac:parameter ac:name="theme">RDark</ac:parameter>\n'
         f'  <ac:plain-text-body><![CDATA[{body}]]></ac:plain-text-body>\n'
         '</ac:structured-macro>'
     )
