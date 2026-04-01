@@ -980,6 +980,28 @@ archives:
         format: zip
 ```
 
+### CI/CD Integration
+
+**Automate testing and releases with GitHub Actions:**
+
+See `references/github-workflows/` for complete workflow examples:
+
+- `ci.yml` - Run tests, build, and lint on every push/PR
+- `release.yml` - Automated releases with GoReleaser
+
+**Quick Setup:**
+
+1. Copy workflow files to `.github/workflows/`
+2. Update `go-version` if needed
+3. Adjust build path if your main package is not in `./cmd/`
+
+**CI Features:**
+- Test on every push and pull request
+- Build verification
+- Linting with `go vet`
+- Multi-platform releases (Linux, macOS, Windows)
+- ARM64 and AMD64 support
+
 ### Uninstall Instructions
 
 **Make uninstall easy:**

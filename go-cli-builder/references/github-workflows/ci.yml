@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'fix/**'
+  pull_request:
+    branches:
+      - 'feature/**'
+      - 'fix/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test ./... -v
+
+      - name: Build
+        run: go build -o myapp ./cmd/
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Run go vet
+        run: go vet ./...
