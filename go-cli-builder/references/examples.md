@@ -1788,9 +1788,11 @@ import (
 )
 
 func createHTTPClient(ctx *config.Context) *http.Client {
+    // SECURITY WARNING: InsecureSkipVerify should only be used for development/testing
+    // with self-signed certificates. Never use in production!
     transport := &http.Transport{
         TLSClientConfig: &tls.Config{
-            InsecureSkipVerify: ctx.Insecure,
+            InsecureSkipVerify: ctx.Insecure, // nosec: G402 - Intentional for dev/test
         },
     }
     

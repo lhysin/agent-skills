@@ -1408,10 +1408,13 @@ func createHTTPClient(ctx *config.Context) *http.Client {
         Timeout: 30 * time.Second,
     }
     
-    // Add transport for insecure connections
+    // SECURITY WARNING: InsecureSkipVerify should only be used for development
+    // or testing with self-signed certificates. Never use in production!
     if ctx.Insecure {
         client.Transport = &http.Transport{
-            TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+            TLSClientConfig: &tls.Config{
+                InsecureSkipVerify: true, // nosec: G402 - Intentional for dev/test only
+            },
         }
     }
     
