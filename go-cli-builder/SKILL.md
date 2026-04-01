@@ -995,7 +995,452 @@ rm /usr/local/bin/myapp
 rm -rf ~/.config/myapp
 ```
 
-## Complete Example
+## Authentication and Context Management
+
+For CLI tools that need to connect to APIs or services (like `kubectl`), implement context-based authentication:
+
+### Context Pattern (kubectl-style)
+
+Store multiple authentication contexts and allow users to switch between them:
+
+```
+~/.config/myapp/
+├── config              # Main config with current context
+├── contexts/
+│   ├── production.json
+│   ├── staging.json
+│   └── development.json
+└── credentials/
+    └── tokens.json     # Encrypted or obfuscated tokens
+```
+
+### Configuration Structure
+
+```go
+package config
+
+// Context represents a connection context
+type Context struct {
+    Name       string            `json:"name"`
+    Server     string            `json:"server"`
+    APIKey     string            `json:"api_key,omitempty"`
+    Token      string            `json:"token,omitempty"`
+    Username   string            `json:"username,omitempty"`
+    AuthType   string            `json:"auth_type"` // apikey, token, oauth
+    Headers    map[string]string `json:"headers,omitempty"`
+    Insecure   bool              `json:"insecure,omitempty"`
+}
+
+// Config represents the main configuration
+type Config struct {
+    CurrentContext string              `json:"current_context"`
+    Contexts       map[string]*Context `json:"contexts"`
+}
+
+func (c *Config) GetCurrentContext() (*Context, error) {
+    if c.CurrentContext == "" {
+        return nil, fmt.Errorf("no context selected. Run 'myapp context set <name>'")
+    }
+    
+    ctx, ok := c.Contexts[c.CurrentContext]
+    if !ok {
+        return nil, fmt.Errorf("context '%s' not found", c.CurrentContext)
+    }
+    
+    return ctx, nil
+}
+
+func (c *Config) SetContext(name string) error {
+    if _, ok := c.Contexts[name]; !ok {
+        available := make([]string, 0, len(c.Contexts))
+        for n := range c.Contexts {
+            available = append(available, n)
+        }
+        return fmt.Errorf("context '%s' not found. Available: %v", name, available)
+    }
+    
+    c.CurrentContext = name
+    return nil
+}
+```
+
+### Login Command
+
+```go
+package cmd
+
+var loginCmd = &cobra.Command{
+    Use:   "login [context-name]",
+    Short: "Authenticate and create a new context",
+    Example: `  # Login with API key
+  myapp login production --api-key=YOUR_API_KEY
+
+  # Login with token (interactive)
+  myapp login staging --token
+
+  # Login to specific server
+  myapp login dev --server=https://dev.example.com --api-key=KEY`,
+    RunE: func(cmd *cobra.Command, args []string) error {
+        if len(args) == 0 {
+            return fmt.Errorf("context name required")
+        }
+        
+        contextName := args[0]
+        server, _ := cmd.Flags().GetString("server")
+        apiKey, _ := cmd.Flags().GetString("api-key")
+        useToken, _ := cmd.Flags().GetBool("token")
+        username, _ := cmd.Flags().GetString("username")
+        insecure, _ := cmd.Flags().GetBool("insecure")
+        
+        // Get credentials interactively if not provided
+        if apiKey == "" && !useToken {
+            return fmt.Errorf("--api-key or --token required")
+        }
+        
+        var token string
+        if useToken {
+            var err error
+            token, err = readPassword("Token: ")
+            if err != nil {
+                return err
+            }
+        }
+        
+        // Create context
+        ctx := &config.Context{
+            Name:     contextName,
+            Server:   server,
+            APIKey:   apiKey,
+            Token:    token,
+            Username: username,
+            AuthType: determineAuthType(apiKey, token),
+            Insecure: insecure,
+        }
+        
+        // Test connection
+        fmt.Fprintf(os.Stderr, "Authenticating to %s...\n", server)
+        if err := testConnection(ctx); err != nil {
+            return fmt.Errorf("authentication failed: %w", err)
+        }
+        
+        // Save context
+        cfg, _ := config.Load()
+        if cfg.Contexts == nil {
+            cfg.Contexts = make(map[string]*config.Context)
+        }
+        cfg.Contexts[contextName] = ctx
+        cfg.CurrentContext = contextName
+        
+        if err := config.Save(cfg); err != nil {
+            return fmt.Errorf("failed to save context: %w", err)
+        }
+        
+        printSuccess(fmt.Sprintf("Logged in to '%s' (%s)", contextName, server))
+        fmt.Fprintf(os.Stderr, "\nCurrent context: %s\n", contextName)
+        
+        return nil
+    },
+}
+
+func init() {
+    loginCmd.Flags().String("server", "", "Server URL (required)")
+    loginCmd.Flags().String("api-key", "", "API key for authentication")
+    loginCmd.Flags().Bool("token", false, "Use token authentication (will prompt)")
+    loginCmd.Flags().String("username", "", "Username (if required)")
+    loginCmd.Flags().Bool("insecure", false, "Allow insecure server connections")
+    loginCmd.MarkFlagRequired("server")
+}
+
+func testConnection(ctx *config.Context) error {
+    // Make a test API call
+    client := createHTTPClient(ctx)
+    resp, err := client.Get(ctx.Server + "/api/v1/ping")
+    if err != nil {
+        return err
+    }
+    defer resp.Body.Close()
+    
+    if resp.StatusCode != 200 {
+        return fmt.Errorf("server returned %d", resp.StatusCode)
+    }
+    
+    return nil
+}
+```
+
+### Context Commands
+
+```go
+package cmd
+
+// myapp context list
+var contextListCmd = &cobra.Command{
+    Use:   "list",
+    Short: "List all contexts",
+    RunE: func(cmd *cobra.Command, args []string) error {
+        cfg, err := config.Load()
+        if err != nil {
+            return err
+        }
+        
+        if len(cfg.Contexts) == 0 {
+            fmt.Fprintln(os.Stderr, "No contexts configured.")
+            fmt.Fprintln(os.Stderr, "\nRun 'myapp login <name>' to add a context.")
+            return nil
+        }
+        
+        table := output.NewTable("NAME", "SERVER", "AUTH TYPE", "CURRENT")
+        for name, ctx := range cfg.Contexts {
+            current := ""
+            if name == cfg.CurrentContext {
+                current = "*"
+            }
+            table.AddRow(name, ctx.Server, ctx.AuthType, current)
+        }
+        
+        return table.Print()
+    },
+}
+
+// myapp context set <name>
+var contextSetCmd = &cobra.Command{
+    Use:   "set [name]",
+    Short: "Set the current context",
+    Example: `  myapp context set production
+  myapp context set staging`,
+    Args: cobra.ExactArgs(1),
+    RunE: func(cmd *cobra.Command, args []string) error {
+        cfg, err := config.Load()
+        if err != nil {
+            return err
+        }
+        
+        if err := cfg.SetContext(args[0]); err != nil {
+            return err
+        }
+        
+        if err := config.Save(cfg); err != nil {
+            return fmt.Errorf("failed to save config: %w", err)
+        }
+        
+        printSuccess(fmt.Sprintf("Switched to context '%s'", args[0]))
+        return nil
+    },
+}
+
+// myapp context delete <name>
+var contextDeleteCmd = &cobra.Command{
+    Use:   "delete [name]",
+    Short: "Delete a context",
+    Example: `  myapp context delete old-staging`,
+    Args: cobra.ExactArgs(1),
+    RunE: func(cmd *cobra.Command, args []string) error {
+        cfg, err := config.Load()
+        if err != nil {
+            return err
+        }
+        
+        name := args[0]
+        
+        // Confirm deletion
+        if !force {
+            confirmed, err := Confirm(fmt.Sprintf("Delete context '%s'?", name))
+            if err != nil {
+                return err
+            }
+            if !confirmed {
+                fmt.Fprintln(os.Stderr, "Cancelled.")
+                return nil
+            }
+        }
+        
+        delete(cfg.Contexts, name)
+        
+        // If deleted context was current, clear it
+        if cfg.CurrentContext == name {
+            cfg.CurrentContext = ""
+            fmt.Fprintln(os.Stderr, "Note: Deleted context was current. Run 'myapp context set <name>' to select another.")
+        }
+        
+        if err := config.Save(cfg); err != nil {
+            return fmt.Errorf("failed to save config: %w", err)
+        }
+        
+        printSuccess(fmt.Sprintf("Deleted context '%s'", name))
+        return nil
+    },
+}
+
+// myapp context show
+var contextShowCmd = &cobra.Command{
+    Use:   "show",
+    Short: "Show current context details",
+    RunE: func(cmd *cobra.Command, args []string) error {
+        cfg, err := config.Load()
+        if err != nil {
+            return err
+        }
+        
+        ctx, err := cfg.GetCurrentContext()
+        if err != nil {
+            return err
+        }
+        
+        if jsonOutput {
+            return outputJSON(ctx)
+        }
+        
+        fmt.Printf("Name:     %s\n", ctx.Name)
+        fmt.Printf("Server:   %s\n", ctx.Server)
+        fmt.Printf("Auth:     %s\n", ctx.AuthType)
+        if ctx.Username != "" {
+            fmt.Printf("Username: %s\n", ctx.Username)
+        }
+        fmt.Printf("Insecure: %t\n", ctx.Insecure)
+        
+        return nil
+    },
+}
+
+var contextCmd = &cobra.Command{
+    Use:   "context",
+    Short: "Manage authentication contexts",
+    Long:  `Manage multiple authentication contexts for different servers or environments.`,
+}
+
+func init() {
+    contextCmd.AddCommand(contextListCmd)
+    contextCmd.AddCommand(contextSetCmd)
+    contextCmd.AddCommand(contextDeleteCmd)
+    contextCmd.AddCommand(contextShowCmd)
+    
+    rootCmd.AddCommand(contextCmd)
+}
+```
+
+### Logout Command
+
+```go
+package cmd
+
+var logoutCmd = &cobra.Command{
+    Use:   "logout [context-name]",
+    Short: "Logout from a context (removes credentials)",
+    Example: `  # Logout from current context
+  myapp logout
+
+  # Logout from specific context
+  myapp logout production`,
+    RunE: func(cmd *cobra.Command, args []string) error {
+        cfg, err := config.Load()
+        if err != nil {
+            return err
+        }
+        
+        var contextName string
+        if len(args) > 0 {
+            contextName = args[0]
+        } else {
+            contextName = cfg.CurrentContext
+        }
+        
+        if contextName == "" {
+            return fmt.Errorf("no context specified and no current context. Use 'myapp logout <context>'")
+        }
+        
+        ctx, ok := cfg.Contexts[contextName]
+        if !ok {
+            return fmt.Errorf("context '%s' not found", contextName)
+        }
+        
+        // Clear credentials
+        ctx.APIKey = ""
+        ctx.Token = ""
+        
+        if err := config.Save(cfg); err != nil {
+            return fmt.Errorf("failed to save config: %w", err)
+        }
+        
+        printSuccess(fmt.Sprintf("Logged out from '%s'", contextName))
+        return nil
+    },
+}
+```
+
+### Using Context in Commands
+
+```go
+package cmd
+
+var apiCallCmd = &cobra.Command{
+    Use:   "api-call",
+    Short: "Make an API call using current context",
+    RunE: func(cmd *cobra.Command, args []string) error {
+        // Load current context
+        cfg, err := config.Load()
+        if err != nil {
+            return fmt.Errorf("failed to load config: %w", err)
+        }
+        
+        ctx, err := cfg.GetCurrentContext()
+        if err != nil {
+            return err
+        }
+        
+        // Create authenticated client
+        client := createHTTPClient(ctx)
+        
+        // Make request
+        resp, err := client.Get(ctx.Server + "/api/v1/resource")
+        if err != nil {
+            return fmt.Errorf("API call failed: %w", err)
+        }
+        defer resp.Body.Close()
+        
+        // Handle response...
+        
+        return nil
+    },
+}
+
+func createHTTPClient(ctx *config.Context) *http.Client {
+    client := &http.Client{
+        Timeout: 30 * time.Second,
+    }
+    
+    // Add transport for insecure connections
+    if ctx.Insecure {
+        client.Transport = &http.Transport{
+            TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+        }
+    }
+    
+    return client
+}
+
+// Add authentication headers
+func addAuthHeaders(req *http.Request, ctx *config.Context) {
+    switch ctx.AuthType {
+    case "apikey":
+        req.Header.Set("X-API-Key", ctx.APIKey)
+    case "token":
+        req.Header.Set("Authorization", "Bearer "+ctx.Token)
+    case "basic":
+        // Implement basic auth
+    }
+}
+```
+
+### Best Practices for Authentication
+
+1. **Never store credentials in plain text** in the main config
+2. **Use OS keyring** when available (macOS Keychain, Windows Credential Manager, Linux Secret Service)
+3. **Support token refresh** for OAuth-style authentication
+4. **Warn about insecure connections** when using `--insecure`
+5. **Show current context** in prompt or status bar
+6. **Auto-select context** if only one exists
+
+### Complete Example
 
 See `references/` directory for:
 - `root-template.go` - Complete Cobra root command template
