@@ -8,25 +8,27 @@ This directory contains example GitHub Actions workflows for Go CLI projects.
 Continuous Integration workflow that runs on every push and pull request.
 
 **Features:**
-- Runs on `feature/**` and `fix/**` branches
-- Sets up Go 1.26
+- Runs on `main` and `develop` branches
+- Sets up Go 1.26 with module caching (`cache: true`)
 - Downloads dependencies
 - Runs all tests (`go test ./...`)
 - Builds the binary
 - Runs linting (`go vet`)
+- Runs comprehensive linting with `golangci-lint`
 
 **Triggers:**
-- Push to `feature/*` or `fix/*` branches
-- Pull requests to `feature/*` or `fix/*` branches
+- Push to `main` or `develop` branches
+- Pull requests to `main` or `develop` branches
 
 ### release.yml
 Automated release workflow using GoReleaser.
 
 **Features:**
-- Triggers on push to `main` branch
-- Uses GoReleaser for automated releases
+- Triggers on version tag push (e.g., `v1.0.0`)
+- Uses GoReleaser v2 for automated releases
 - Creates GitHub releases with binaries for multiple platforms
 - Publishes to GitHub Releases page
+- Go module caching for faster builds
 
 **Requirements:**
 - `GITHUB_TOKEN` secret (automatically provided by GitHub Actions)
