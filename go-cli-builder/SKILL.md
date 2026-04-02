@@ -382,12 +382,61 @@ Read `references/github-workflows/ci.yml` and `references/github-workflows/relea
 # Installation
 curl -sSL https://example.com/install.sh | sh
 
-# Uninstallation  
+# Uninstallation
 myapp uninstall
 # or
 rm /usr/local/bin/myapp
 rm -rf ~/.config/myapp
 ```
+
+## README Documentation
+
+**Always create bilingual README files** for CLI projects:
+
+| File | Language | Purpose |
+|------|----------|---------|
+| `README.md` | English | International audience, use in package registries (GitHub, crates.io) |
+| `README_ko.md` | Korean | Korean-speaking users and teams |
+
+**README structure:**
+
+```markdown
+# CLI Name
+
+Brief description (1-2 sentences).
+
+## Installation
+
+```bash
+# Binary releases
+curl -sSL https://example.com/install.sh | sh
+
+# Via package managers
+brew install myapp
+```
+
+## Usage
+
+```bash
+# Basic command
+myapp [command] [flags]
+
+# Examples
+myapp login production
+myapp context set staging
+```
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `myapp login [name]` | Authenticate and create a context |
+| `myapp logout [name]` | Logout and remove credentials |
+| `myapp context list` | List all contexts |
+| `myapp context set [name]` | Switch to a context |
+```
+
+**README_ko.md should be a direct translation** with same structure and examples.
 
 ## Authentication and Context Management
 
