@@ -9,6 +9,16 @@ metadata:
 
 Use this skill for repeatable Confluence documentation work where the user wants reliable page updates, hierarchy changes, backup steps, or verification after publishing.
 
+## Decision tree
+
+Before diving into steps, route by task type:
+
+- **Single page content update** → steps 1 → 4 → 6
+- **Page hierarchy / move / rename** → steps 1 → 2 → 5 → 6
+- **Mermaid diagram publish** → steps 1 → 3 → 6
+- **Multi-page restructure** → steps 1 → 2 → 5 → 6, then re-verify hierarchy
+- **Any step fails** → step 7 before continuing
+
 ## Compatibility
 
 - Use [confluence-cli](https://github.com/pchuri/confluence-cli) for all Confluence operations.
@@ -91,6 +101,16 @@ Never stop at the write step. Re-read the affected pages so the user can trust t
 
 If numbering or hierarchy matters, explicitly mention that you checked it.
 
+### 7. Handle errors and fallbacks
+
+If a step fails, use this decision path:
+
+- **Auth failure**: re-run `confluence login --local` or re-confirm credentials before retrying.
+- **Page locked or conflict**: read the current page state and decide whether to merge changes or ask the user to resolve the conflict.
+- **Network or timeout error**: retry once, then report the page ID and the exact command that failed so the user can recover manually.
+- **Mermaid render failure**: fall back to uploading the raw `.mmd` file as a text attachment and noting it in the report.
+- **Pandoc conversion failure**: check that the input Markdown is valid and try with `--standalone` removed if the pipeline errors out.
+
 ## Default outcome
 
 When you finish, give the user a short operational report that includes:
@@ -100,7 +120,23 @@ When you finish, give the user a short operational report that includes:
 - which attachments were uploaded or updated
 - what verification you performed after the change
 
+## Anti-patterns
+
+**Never use Confluence Markdown format as the primary publish path.**
+Why: The Confluence Markdown parser diverges from standard parsers in subtle but painful ways. Table column alignment silently breaks, code block language tags disappear after Confluence upgrades, and heading IDs get reassigned unpredictably. The storage format via Pandoc is longer but deterministic — what you preview is what you get.
+
+**Never update a body-only operation when a title-only update would suffice.**
+Why: A body update rewrites the entire storage payload and can accidentally drop formatting that the editor preserves but the storage format does not track (e.g. inline comments, embedded widgets). A title-only update touches only the title field and carries zero formatting risk.
+
+**Never skip the read step before any write.**
+Why: Confluence page state is not in your local repo. Without reading first you will not know if the page has existing Mermaid attachments, expand blocks, or numbered sections that your update would overwrite or duplicate. A 30-second read prevents a 30-minute cleanup.
+
+**Never publish Mermaid without the source in an expand block.**
+Why: Rendered PNG alone leaves editors with no way to edit the diagram later without reverse-engineering it from the image. The PNG is for readers; the source is for maintainers.
+
 ## Reference map
+
+Load a reference file only when the decision tree routes to it. Do not pre-load reference files.
 
 - `references/confluence-cli-recipes.md`: exact command patterns when you need CLI syntax
 - `references/mermaid-cli-recipes.md`: Mermaid rendering defaults and publishing conventions

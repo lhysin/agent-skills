@@ -5,7 +5,7 @@ Use this file when you already know which operation you need and just want the e
 ## Authentication
 
 ```bash
-confluence login -u <username> -p <password> -u <url>
+confluence login -u <username> -p <password> -U <url>
 confluence login --local
 confluence logout
 ```

@@ -20,7 +20,7 @@ confluence update <pageId> -f /tmp/example.storage --format storage
 
 ## Rules
 
-- Do not rely on Confluence markdown format as the primary publish path.
-- Convert fenced code blocks into Confluence `code` macros.
+- Do not rely on Confluence markdown format as the primary publish path. The Confluence Markdown parser diverges from standard parsers in subtle ways — table alignment, code block language tags, and heading IDs are particularly unreliable and can silently break across upgrades.
+- Convert fenced code blocks into Confluence `code` macros so language highlighting is stable regardless of parser version.
 - Let Pandoc handle headings, tables, and lists unless the page needs a hand-tuned storage fragment.
 - For larger pages, compare the old and new rendered body before and after publishing.

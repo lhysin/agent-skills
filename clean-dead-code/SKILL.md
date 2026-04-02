@@ -67,6 +67,22 @@ Read `references/evidence-model.md` only if a candidate has one strong signal, c
 
 Treat cleanup as a triage problem, not a binary yes-or-no judgment.
 
+Use this decision tree to classify:
+
+```
+Is the candidate flagged by compiler/linter/type-checker as unused?
+├─ YES → Is it private (not exported, no public API surface)?
+│       ├─ YES → Are there zero cross-package or dynamic references?
+│       │       ├─ YES → HIGH confidence → safe to delete in next batch
+│       │       └─ NO  → MEDIUM confidence → report to user
+│       └─ NO  → MEDIUM confidence → check external consumers before deleting
+└─ NO  → Is it clearly internal with zero repo-wide references?
+        ├─ YES → Is there a dynamic loading pattern nearby?
+        │       ├─ YES → LOW confidence → do not delete automatically
+        │       └─ NO  → HIGH confidence → safe to delete in next batch
+        └─ NO  → MEDIUM confidence → gather more signals
+```
+
 #### High confidence
 
 Usually safe to remove when most of these are true:
@@ -127,12 +143,14 @@ Read `references/verification-checklist.md` only when the repo has multiple avai
 - orphaned files, tests, stories, styles, assets, or docs that no longer connect to active code
 - dependencies that became unused only if the repo evidence clearly supports package cleanup
 
-## Candidate types that need extra caution
+## Anti-patterns (NEVER do these)
 
-- public packages, SDKs, shared utilities, or code intended for external consumers
-- routes, jobs, tasks, templates, themes, migrations, or admin screens discovered by convention
-- code loaded by environment flags, string keys, or runtime reflection
-- analytics hooks, monitoring integrations, and feature toggles with incomplete coverage
+- **NEVER delete a migration file** just because it appears unused — frameworks auto-run them in order, and removing one can corrupt the DB schema state for other developers or production.
+- **NEVER delete a fixture or snapshot file** based on zero direct imports — test runners or storybooks often load them by glob pattern or filename convention.
+- **NEVER delete routes, pages, or job files** because a text search finds no callers — frameworks like Next.js, Rails, or Celery discover them by filename or directory structure.
+- **NEVER delete code exported from a shared package** (SDK, utils, ui) based only on zero references in the producing repo — consumers outside the repo may depend on it.
+- **NEVER delete generated files, vendor code, or lock files** — these are not dead code even when they appear orphaned.
+- **NEVER delete feature-flagged code** where the flag is a string key checked at runtime — the linter cannot see that the branch is live in production.
 
 Read `references/dynamic-risk-checklist.md` only when you see route conventions, registries, string-based lookups, reflection, or other runtime discovery patterns.
 

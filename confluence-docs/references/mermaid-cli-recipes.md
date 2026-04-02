@@ -22,6 +22,8 @@ EOF
 - background: `#0b1220`
 - width: `2400`
 
+Dark theme is the default because it produces high-contrast screenshots that remain legible when embedded at smaller sizes on Confluence pages, and it avoids the washed-out appearance that light themes often produce after Confluence's image compression.
+
 These defaults produce a crisp diagram for Confluence pages and large screenshots.
 
 ## Publishing rule

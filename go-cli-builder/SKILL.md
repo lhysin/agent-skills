@@ -1,6 +1,6 @@
 ---
 name: go-cli-builder
-description: Design and implement high-quality CLI tools using Go and Cobra, following clig.dev guidelines. Use for new CLI projects, code reviews, adding subcommands, help text, error handling, and all CLI-related work. Triggered by requests like "build Go CLI", "command-line tool", "Cobra project", "CLI code review", or "create CLI with flags".
+description: Design and implement high-quality CLI tools using Go and Cobra, following clig.dev guidelines. Use for new CLI projects, code reviews, adding subcommands, help text, error handling, output formatting, and all CLI-related work. Also use when building interactive login/logout flows, authentication context management, or kubectl-style credential handling. Triggered by requests like "build Go CLI", "command-line tool", "Cobra project", "CLI code review", "create CLI with flags", "interactive login", "CLI authentication", or "context-based credentials".
 ---
 
 # Go CLI Builder
@@ -13,224 +13,33 @@ A comprehensive skill for building high-quality command-line interface (CLI) too
 - Reviewing and improving existing Go CLI code against best practices
 - Adding subcommands, flags, or help text to CLI tools
 - Implementing error handling, output formatting, or user experience improvements
+- Building interactive login/logout flows with authentication
+- Implementing kubectl-style context-based credential management
 - Converting scripts into proper CLI tools
 
 ## Core Philosophy (from clig.dev)
 
-### 1. Human-First Design
-Design for humans first, even if your tool is also used programmatically. Modern CLIs should prioritize the human experience while maintaining composability.
+**Human-First Design**: Design for humans first, even if your tool is also used programmatically. CLI interaction is inherently conversational - guide users back on track, make intermediate state clear, and confirm before destructive operations.
 
-### 2. Simple Parts That Work Together
-Build small, modular programs with clean interfaces. Use standard UNIX mechanisms:
-- stdin/stdout/stderr for I/O
-- Signals for control
-- Exit codes for success/failure reporting
-- Plain text for piping; JSON for structured data
+**Simple Parts That Work Together**: Build small, modular programs with clean interfaces. Use stdin/stdout/stderr, signals, exit codes, plain text for piping, and JSON for structured data.
 
-### 3. Consistency Across Programs
-Terminal conventions are "hardwired into our fingers." Follow existing patterns to make your CLI intuitive and guessable. Break convention only when it significantly compromises usability.
+**Consistency + Discovery**: Follow existing terminal conventions ("hardwired into our fingers"). Make your CLI self-documenting with comprehensive help, command suggestions, and next-step guidance.
 
-### 4. Saying (Just) Enough
-- Too little output: user wonders if the program is broken
-- Too much output: user drowned in irrelevant information
-- Find the balance through clear, concise communication
+**Saying (Just) Enough + Robustness**: Too little output makes users wonder if it's broken; too much drowns them. Handle unexpected input gracefully, make operations idempotent, fail fast with clear error messages, and provide bug report instructions.
 
-### 5. Ease of Discovery
-Make your CLI self-documenting:
-- Comprehensive help with examples first
-- Suggest corrections for mistyped commands
-- Recommend next steps in workflows
-- Link to web documentation
+See [clig.dev](https://clig.dev/) for full guidelines.
 
-### 6. Conversation as the Norm
-CLI interaction is inherently conversational:
-- Guide users back on track when they make mistakes
-- Make intermediate state clear in multi-step processes
-- Confirm before destructive operations
+## Getting Started
 
-### 7. Robustness
-- Handle unexpected input gracefully
-- Make operations idempotent where possible
-- Feel solid and responsive
-- Fail fast with clear error messages
+**New to Go CLI development?** Read `references/beginner-guide.md` first for project setup, basic templates, and quick start commands.
 
-### 8. Empathy
-CLI tools are a programmer's creative toolkit. Give users the feeling that you're on their side, want them to succeed, and have thought carefully about their problems.
-
-## The Basics (Essential Rules)
-
-**Get these wrong, and your program will be broken or very hard to use.**
-
-### Use a CLI Argument Parsing Library
-
-**For Go, use Cobra (recommended) or urfave/cli:**
-
-```bash
-go get github.com/spf13/cobra@latest
-```
-
-Cobra provides:
-- Command and subcommand structure
-- Flag parsing (short and long forms)
-- Help text generation
-- Shell completions
-- Suggestions for mistyped commands
-
-### Exit Codes
-
-**Return zero on success, non-zero on failure:**
-
-```go
-// Success
-os.Exit(0)
-
-// General error
-os.Exit(1)
-
-// Specific errors (map to most important failure modes)
-os.Exit(2) // Invalid arguments
-os.Exit(3) // Configuration error
-os.Exit(4) // Network error
-```
-
-### Output Streams
-
-**stdout**: Primary output, machine-readable content
-```go
-fmt.Println("result data") // Goes to stdout
-```
-
-**stderr**: Log messages, errors, progress
-```go
-fmt.Fprintln(os.Stderr, "Error: file not found")
-```
-
-This ensures piping works correctly:
-```bash
-myapp | grep "pattern"  # stderr messages are displayed, not piped
-```
-
-## New CLI Project Workflow
-
-### Step 1: Project Structure
-
-```
-myapp/
-├── cmd/
-│   ├── root.go          # Root command definition
-│   ├── version.go       # Version subcommand
-│   └── subcommand.go    # Other subcommands
-├── internal/
-│   ├── config/          # Configuration management
-│   └── output/          # Output formatting utilities
-├── main.go              # Entry point
-├── go.mod
-└── go.sum
-```
-
-### Step 2: Initialize Go Module
-
-```bash
-mkdir myapp && cd myapp
-go mod init github.com/yourusername/myapp
-go get github.com/spf13/cobra@latest
-go get github.com/mattn/go-isatty  # TTY detection
-go get github.com/fatih/color      # Optional: colors
-```
-
-### Step 3: Implement Root Command
-
-Use `references/root-template.go` as your starting point. Key components:
-
-```go
-package cmd
-
-import (
-    "fmt"
-    "os"
-    
-    "github.com/fatih/color"
-    "github.com/mattn/go-isatty"
-    "github.com/spf13/cobra"
-)
-
-var (
-    // Flags
-    jsonOutput bool
-    quietMode  bool
-    noColor    bool
-    
-    rootCmd = &cobra.Command{
-        Use:   "myapp",
-        Short: "Brief description of what myapp does",
-        Long: `A longer description that spans multiple lines
-and likely contains examples and usage of using your application.
-
-For example:
-    myapp file.txt
-    myapp --json output.json`,
-        Example: `  # Process a single file
-  myapp input.txt
-  
-  # Output as JSON
-  myapp --json input.txt > output.json`,
-        
-        // Run executes when no subcommands are provided
-        RunE: func(cmd *cobra.Command, args []string) error {
-            return run(args)
-        },
-    }
-)
-
-func init() {
-    // Global flags
-    rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Output in JSON format")
-    rootCmd.PersistentFlags().BoolVarP(&quietMode, "quiet", "q", false, "Suppress non-essential output")
-    rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output")
-}
-
-func Execute() {
-    if err := rootCmd.Execute(); err != nil {
-        fmt.Fprintln(os.Stderr, err)
-        os.Exit(1)
-    }
-}
-
-func isInteractive() bool {
-    return isatty.IsTerminal(os.Stdout.Fd()) || 
-           isatty.IsCygwinTerminal(os.Stdout.Fd())
-}
-
-func shouldUseColor() bool {
-    if noColor {
-        return false
-    }
-    if os.Getenv("NO_COLOR") != "" {
-        return false
-    }
-    if os.Getenv("TERM") == "dumb" {
-        return false
-    }
-    return isInteractive()
-}
-```
-
-### Step 4: Handle Missing Arguments
-
-Show concise help when arguments are required but not provided:
-
-```go
-RunE: func(cmd *cobra.Command, args []string) error {
-    if len(args) == 0 {
-        // Show concise help and exit
-        fmt.Fprintln(os.Stderr, "Error: requires at least one file argument")
-        fmt.Fprintf(os.Stderr, "Usage: %s [flags] <file>\n\n", cmd.UseLine())
-        fmt.Fprintln(os.Stderr, "For more help: myapp --help")
-        os.Exit(1)
-    }
-    return run(args)
-},
-```
+For experienced developers, this skill covers:
+- TTY-aware interactive prompts with fallback to non-interactive mode
+- Authentication context management (kubectl-style)
+- Human-readable error rewriting and robust error handling
+- Output formatting: JSON, plain text, progress indicators
+- Subcommand structure and naming conventions
+- Production deployment: goreleaser, CI/CD, multi-platform builds
 
 ## Help Text Design
 
@@ -298,49 +107,24 @@ rootCmd.SuggestionsMinimumDistance = 2
 
 ## Output Design
 
-### TTY Detection
+### TTY Detection & Color Control
 
-**Always detect if running in an interactive terminal:**
+**Always detect if running in an interactive terminal and disable color in non-TTY:**
 
 ```go
-import "github.com/mattn/go-isatty"
-
 func isInteractive() bool {
-    return isatty.IsTerminal(os.Stdout.Fd()) || 
-           isatty.IsCygwinTerminal(os.Stdout.Fd())
+    return isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd())
 }
-```
 
-### Color Control
-
-**Disable color when:**
-- stdout/stderr is not a TTY
-- `NO_COLOR` environment variable is set (any non-empty value)
-- `TERM=dumb`
-- `--no-color` flag passed
-- `MYAPP_NO_COLOR` environment variable set
-
-```go
 func shouldUseColor() bool {
-    if noColor || os.Getenv("MYAPP_NO_COLOR") != "" {
+    if noColor || os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
         return false
     }
-    if os.Getenv("NO_COLOR") != "" {
-        return false
-    }
-    if os.Getenv("TERM") == "dumb" {
-        return false
-    }
-    if !isInteractive() {
-        return false
-    }
-    return true
+    return isInteractive()
 }
 ```
 
-### JSON Output
-
-**Always support `--json` for structured output:**
+### JSON Output (--json)
 
 ```go
 if jsonOutput {
@@ -348,346 +132,112 @@ if jsonOutput {
     enc.SetIndent("", "  ")
     enc.Encode(result)
 } else {
-    // Human-readable output
-    fmt.Printf("Name: %s\n", result.Name)
-    fmt.Printf("Status: %s\n", result.Status)
+    fmt.Printf("Name: %s\nStatus: %s\n", result.Name, result.Status)
 }
 ```
 
-This enables piping to `jq` and integration with web services.
-
-### Plain Output
-
-**Support `--plain` for script-friendly tabular output:**
-
-When human-readable formatting breaks line-based processing:
+### Progress & State Reporting
 
 ```go
-if plainOutput {
-    // One record per line
-    fmt.Printf("%s\t%s\t%s\n", name, status, size)
-} else {
-    // Multi-line, formatted for humans
-    fmt.Printf("Name:   %s\n", name)
-    fmt.Printf("Status: %s\n", status)
-    fmt.Printf("Size:   %s\n", size)
-}
-```
-
-### Progress Indication
-
-**Show progress for operations >100ms:**
-
-```go
-import "github.com/schollz/progressbar/v3"
-
+// Show progress for operations >100ms in TTY mode, text status otherwise
 if isInteractive() && !quietMode {
-    bar := progressbar.NewOptions64(total,
-        progressbar.OptionSetDescription("Processing..."),
-        progressbar.OptionShowCount(),
-        progressbar.OptionShowBytes(true),
-    )
-    
+    bar := progressbar.NewOptions64(total, progressbar.OptionSetDescription("Processing..."))
     for i := int64(0); i < total; i++ {
         bar.Add(1)
-        // ... do work
     }
 } else {
     fmt.Fprintf(os.Stderr, "Processing %d items...\n", total)
 }
-```
 
-### No Animations in Non-TTY
-
-```go
-if !isInteractive() {
-    // No progress bars, no spinners
-    fmt.Fprintf(os.Stderr, "Starting operation...\n")
-    // ... do work
-    fmt.Fprintf(os.Stderr, "Complete\n")
-}
-```
-
-### State Change Reporting
-
-**Tell users what happened:**
-
-```go
-// Bad: no output
-os.WriteFile(filename, data, 0644)
-
-// Good: report state change
+// Always report state changes
 if err := os.WriteFile(filename, data, 0644); err != nil {
-    return fmt.Errorf("failed to write %s: %w", filename, err)
+    return err
 }
-if !quietMode {
-    fmt.Fprintf(os.Stderr, "Created %s (%d bytes)\n", filename, len(data))
-}
+fmt.Fprintf(os.Stderr, "Created %s (%d bytes)\n", filename, len(data))
 ```
 
 ### Suggest Next Commands
 
-**Guide users through workflows:**
-
 ```go
 fmt.Println("Repository initialized.")
-fmt.Println()
 fmt.Println("Next steps:")
 fmt.Println("  1. Add files:    myapp add <file>")
 fmt.Println("  2. Commit:       myapp commit -m 'Initial commit'")
-fmt.Println("  3. View status:  myapp status")
 ```
 
 ## Error Handling
 
-### Human-Readable Errors
-
-**Rewrite technical errors for humans:**
+**Rewrite technical errors for humans and group similar errors:**
 
 ```go
-// Bad
-return fmt.Errorf("open %s: %w", filename, err)
-
-// Good
-cmd.SilenceErrors = true  // Don't print error twice
+// Human-readable errors with grouped output
+cmd.SilenceErrors = true
 if os.IsNotExist(err) {
     fmt.Fprintf(os.Stderr, "Error: File not found: %s\n", filename)
-    fmt.Fprintf(os.Stderr, "\nMake sure the file exists and you have permission to read it.\n")
+    fmt.Fprintf(os.Stderr, "Make sure the file exists and you have permission.\n")
     os.Exit(1)
 }
-```
 
-### High Signal-to-Noise Ratio
-
-**Group similar errors:**
-
-```go
-// Bad: multiple similar error lines
-for _, file := range files {
-    if err := process(file); err != nil {
-        fmt.Fprintf(os.Stderr, "Error: failed to process %s: %v\n", file, err)
-    }
-}
-
-// Good: grouped errors
+// Group similar errors
 var failedFiles []string
 for _, file := range files {
     if err := process(file); err != nil {
         failedFiles = append(failedFiles, file)
     }
 }
-
 if len(failedFiles) > 0 {
     fmt.Fprintf(os.Stderr, "Error: Failed to process %d files:\n", len(failedFiles))
     for _, file := range failedFiles {
         fmt.Fprintf(os.Stderr, "  - %s\n", file)
     }
-    fmt.Fprintf(os.Stderr, "\nCheck file permissions and try again.\n")
     os.Exit(1)
 }
-```
 
-### Important Information Last
+// Context first, error last
+fmt.Fprintf(os.Stderr, "File: %s\nUser: %s\nError: permission denied\n", file, user)
 
-**Users look at the end of output:**
-
-```go
-// Bad: error at top, details below
-fmt.Fprintf(os.Stderr, "Error: permission denied\n")
-fmt.Fprintf(os.Stderr, "File: /etc/config.txt\n")
-fmt.Fprintf(os.Stderr, "User: currentuser\n")
-
-// Good: context first, error last
-fmt.Fprintf(os.Stderr, "File: /etc/config.txt\n")
-fmt.Fprintf(os.Stderr, "User: currentuser\n")
-fmt.Fprintf(os.Stderr, "Error: permission denied\n")
-```
-
-### Debug Information
-
-**Only show debug info with --debug flag:**
-
-```go
-if debug {
-    fmt.Fprintf(os.Stderr, "[DEBUG] Request: %+v\n", req)
-    fmt.Fprintf(os.Stderr, "[DEBUG] Response: %+v\n", resp)
-}
-```
-
-### Unexpected Errors
-
-**Provide bug report instructions:**
-
-```go
+// Bug report instructions for unexpected errors
 if err != nil {
     fmt.Fprintf(os.Stderr, "Unexpected error: %v\n", err)
-    fmt.Fprintf(os.Stderr, "\nThis appears to be a bug. Please report it at:\n")
-    fmt.Fprintf(os.Stderr, "https://github.com/user/myapp/issues/new?title=bug:...\n")
-    fmt.Fprintf(os.Stderr, "\nRun with --debug to see full stack trace.\n")
+    fmt.Fprintf(os.Stderr, "Report at: https://github.com/user/myapp/issues/new?title=bug:...\n")
     os.Exit(1)
 }
 ```
 
 ## Arguments and Flags
 
-### Prefer Flags to Arguments
+**Prefer flags to arguments** - flags are clearer and more extensible. Provide both short and long forms (`-v, --verbose`). Never read secrets from flags; use `--password-file` instead.
 
-**Flags are clearer and more extensible:**
+**Standard flag names**: `-a/--all`, `-d/--debug`, `-f/--force`, `-h/--help`, `-n/--dry-run`, `--json`, `-o/--output`, `-q/--quiet`, `--version`.
 
-```bash
-# Bad: unclear what arguments mean
-myapp file.txt 100 true
-
-# Good: self-documenting
-myapp --file=file.txt --count=100 --verbose
-```
-
-### Full-Length Flags Required
-
-**Always provide both short and long forms:**
-
-```go
-rootCmd.Flags().BoolP("verbose", "v", false, "Enable verbose output")
-rootCmd.Flags().StringP("output", "o", "", "Output file path")
-```
-
-### Standard Flag Names
-
-| Flag | Meaning |
-|------|---------|
-| `-a`, `--all` | All items |
-| `-d`, `--debug` | Debug output |
-| `-f`, `--force` | Force action |
-| `-h`, `--help` | Help (only means help) |
-| `-n`, `--dry-run` | Dry run - show what would happen |
-| `--json` | JSON output |
-| `-o`, `--output` | Output file |
-| `-p`, `--port` | Port number |
-| `-q`, `--quiet` | Quiet mode |
-| `-u`, `--user` | User name/ID |
-| `--version` | Version information |
-
-### Multiple Arguments
-
-**Fine for simple file operations:**
-
-```go
-// Good: multiple files to same operation
-myapp rm file1.txt file2.txt file3.txt
-myapp rm *.txt  // Works with globbing
-```
-
-### Two Arguments for Different Things
-
-**Avoid unless it's a very common pattern:**
-
-```go
-// Okay: cp is universally understood
-cp source.txt destination.txt
-
-// Bad: unclear order
-myapp file1.txt file2.txt  // Which is input? Which is output?
-```
-
-### Secrets Handling
-
-**Never read secrets from flags:**
-
-```go
-// BAD: leaks to ps output and shell history
-cmd.Flags().String("password", "", "Database password")
-
-// GOOD: read from file
-cmd.Flags().String("password-file", "", "Path to file containing password")
-
-// Read password from file
-passwordBytes, err := os.ReadFile(passwordFile)
-if err != nil {
-    return fmt.Errorf("failed to read password file: %w", err)
-}
-password := strings.TrimSpace(string(passwordBytes))
-```
-
-### stdin/stdout as Files
-
-**Support `-` for stdin/stdout:**
-
-```go
-// Read from stdin
-if inputFile == "-" {
-    data, err := io.ReadAll(os.Stdin)
-    // ...
-}
-
-// Write to stdout  
-if outputFile == "-" {
-    writer = os.Stdout
-} else {
-    writer, err = os.Create(outputFile)
-}
-```
-
-Usage:
-```bash
-curl https://example.com/data.json | myapp --input=-
-myapp --output=- | jq '.results'
-```
-
-### Optional Flag Values
-
-**Allow "none" for optional values:**
-
-```go
-// ssh -F takes optional config file
-// ssh -F none runs with no config
-if configFile == "none" {
-    // Don't load config
-} else if configFile != "" {
-    // Load specified config
-} else {
-    // Load default config
-}
-```
-
-### Order Independence
-
-**Make flags work before and after subcommands:**
-
-```bash
-myapp --debug subcommand
-myapp subcommand --debug  # Should also work
-```
+**Use stdin/stdout as files**: Support `-` for stdin/stdout (e.g., `curl https://example.com/data.json | myapp --input=-`).
 
 ## Interactivity
 
-### Only Prompt in TTY Mode
-
-```go
-if isInteractive() && !noInput {
-    // Prompt for missing values
-    fmt.Print("Enter your name: ")
-    fmt.Scanln(&name)
-} else {
-    // Fail with clear instruction
-    return fmt.Errorf("name is required (use --name flag)")
-}
-```
-
-### --no-input Flag
+**Prompt only in TTY mode, support `--no-input` for CI:**
 
 ```go
 var noInput bool
-rootCmd.Flags().BoolVar(&noInput, "no-input", false, "Disable interactive prompts")
+rootCmd.Flags().BoolVarP(&noInput, "no-input", "n", false, "Disable interactive prompts")
 
-// In command logic:
-if noInput && name == "" {
-    return fmt.Errorf("--name is required when using --no-input")
+func readPassword(prompt string) string {
+    fmt.Print(prompt)
+    bytePassword, _ := term.ReadPassword(int(os.Stdin.Fd()))
+    fmt.Println()
+    return string(bytePassword)
+}
+
+// Confirm destructive actions
+if isInteractive() && !force {
+    fmt.Fprintf(os.Stderr, "This will delete %d files permanently. Are you sure? [y/N]: ", count)
+    var response string
+    fmt.Scanln(&response)
+    if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
+        fmt.Fprintln(os.Stderr, "Aborted.")
+        return nil
+    }
 }
 ```
-
-### Password Input
-
-**Don't echo passwords:**
 
 ```go
 import "golang.org/x/term"
@@ -703,153 +253,50 @@ func readPassword(prompt string) (string, error) {
 }
 ```
 
-### Dangerous Operations
-
-**Confirm before destructive actions:**
-
-```go
-// Check if running interactively
-if isInteractive() && !force {
-    fmt.Fprintf(os.Stderr, "This will delete %d files permanently.\n", count)
-    fmt.Fprint(os.Stderr, "Are you sure? [y/N]: ")
-    
-    var response string
-    fmt.Scanln(&response)
-    if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
-        fmt.Fprintln(os.Stderr, "Aborted.")
-        return nil
-    }
-}
-```
-
 ## Subcommands
 
-### Structure
+**Use `noun verb` naming** (like Docker): `myapp container create`, `myapp image pull`.
 
 ```go
-// root.go
-var rootCmd = &cobra.Command{
-    Use:   "myapp",
-    Short: "My application",
-}
-
-// subcommand.go
 var createCmd = &cobra.Command{
     Use:   "create [name]",
     Short: "Create a new resource",
-    Example: `  myapp create myresource
-  myapp create --type=advanced myresource`,
     RunE: func(cmd *cobra.Command, args []string) error {
         // Implementation
     },
 }
-
 func init() {
     rootCmd.AddCommand(createCmd)
     createCmd.Flags().String("type", "basic", "Resource type")
 }
 ```
 
-### Naming Convention
+**Keep consistency**: same flag names across subcommands, similar output formatting.
 
-Use `noun verb` pattern (like Docker):
+## Robustness & Configuration
 
-```bash
-myapp container create
-myapp container start
-myapp container stop
-myapp image pull
-myapp image push
-```
-
-### Consistency
-
-- Same flag names across subcommands
-- Similar output formatting
-- Consistent help style
-
-## Robustness
-
-### Responsive > Fast
-
-**Print something within 100ms:**
+**Print something within 100ms** - responsiveness over speed. **Set timeouts** on all network operations. **Handle signals** for graceful Ctrl+C recovery:
 
 ```go
-// Start a spinner or message immediately
-fmt.Fprintf(os.Stderr, "Starting...\n")
-
-// Do work
-result, err := longRunningOperation()
-```
-
-### Timeouts
-
-**Always set timeouts:**
-
-```go
+// Timeouts and signal handling
 ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 defer cancel()
 
-req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-if err != nil {
-    return err
-}
-
-client := &http.Client{Timeout: 30 * time.Second}
-resp, err := client.Do(req)
-```
-
-### Recoverable Operations
-
-**Make it safe to run again:**
-
-```go
-// Check if already done before doing work
-if _, err := os.Stat(outputFile); err == nil {
-    if !force {
-        return fmt.Errorf("output file already exists (use --force to overwrite)")
-    }
-}
-```
-
-### Signal Handling
-
-**Handle Ctrl+C gracefully:**
-
-```go
-ctx, cancel := context.WithCancel(context.Background())
-defer cancel()
-
-// Set up signal handling
 sigCh := make(chan os.Signal, 1)
 signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-
 go func() {
     <-sigCh
-    fmt.Fprintln(os.Stderr, "\nInterrupt received. Cleaning up...")
+    fmt.Fprintln(os.Stderr, "Gracefully stopping...")
     cancel()
-    
-    // Wait for second interrupt
-    <-sigCh
-    fmt.Fprintln(os.Stderr, "\nForced exit.")
-    os.Exit(1)
 }()
 
-// Do work with ctx
-err := doWork(ctx)
+// Make operations safe to repeat
+if _, err := os.Stat(outputFile); err == nil && !force {
+    return fmt.Errorf("output file already exists (use --force)")
+}
 ```
 
-Example output:
-```
-^CGracefully stopping... (press Ctrl+C again to force)
-```
-
-## Configuration
-
-### XDG Specification
-
-Follow [XDG Base Directory Spec](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html):
-
+**XDG config directory** - follow the spec for storing configs:
 ```go
 func configDir() string {
     if dir := os.Getenv("XDG_CONFIG_HOME"); dir != "" {
@@ -860,7 +307,7 @@ func configDir() string {
 }
 ```
 
-### Precedence (High to Low)
+**Config precedence** (high to low): Flags → Env vars → Project-level (`.myapprc`) → User-level (`~/.config/myapp/`) → System-wide (`/etc/myapp/`).
 
 1. Flags
 2. Shell environment variables
@@ -894,100 +341,25 @@ func initConfig() {
 }
 ```
 
-## Environment Variables
-
-### Standard Variables to Check
-
-| Variable | Purpose |
-|----------|---------|
-| `NO_COLOR` / `FORCE_COLOR` | Color control |
-| `DEBUG` | Verbose output |
-| `EDITOR` | Text editor |
-| `HTTP_PROXY`, `HTTPS_PROXY` | Network proxy |
-| `PAGER` | Output pager (e.g., `less`) |
-| `HOME` | Home directory |
-| `TMPDIR` | Temporary files |
-| `TERM` | Terminal type |
-
-### Custom Variables
-
-```go
-// MYAPP_DEBUG for app-specific debug mode
-if os.Getenv("MYAPP_DEBUG") != "" {
-    debug = true
-}
-
-// MYAPP_NO_COLOR for app-specific color override
-if os.Getenv("MYAPP_NO_COLOR") != "" {
-    noColor = true
-}
-```
-
-### .env Files
-
-**Read `.env` for project-specific settings:**
-
-```bash
-go get github.com/joho/godotenv
-```
-
-```go
-import "github.com/joho/godotenv"
-
-func loadEnv() {
-    // Load .env file if it exists
-    godotenv.Load()
-}
-```
+**Standard env vars**: `NO_COLOR`/`FORCE_COLOR` (color), `DEBUG` (verbose), `HTTP_PROXY`/`HTTPS_PROXY` (network), `TERM` (terminal type), `PAGER` (output). Use `godotenv.Load()` to read `.env` files.
 
 ## Distribution
 
-### Single Binary
-
-**Go's strength - distribute as single binary:**
-
+**Go's strength: single binary** - build for multiple platforms:
 ```bash
-# Build for multiple platforms
-go build -o myapp-linux-amd64
 GOOS=darwin GOARCH=amd64 go build -o myapp-darwin-amd64
 GOOS=windows GOARCH=amd64 go build -o myapp-windows-amd64.exe
 ```
 
-### Use goreleaser
-
-**Automate releases:**
-
-```bash
-go install github.com/goreleaser/goreleaser@latest
-```
-
-`.goreleaser.yaml`:
-```yaml
-project_name: myapp
-builds:
-  - binary: myapp
-    goos:
-      - linux
-      - darwin
-      - windows
-    goarch:
-      - amd64
-      - arm64
-archives:
-  - format: tar.gz
-    format_overrides:
-      - goos: windows
-        format: zip
-```
+**Use goreleaser** for automated releases. Read `references/github-workflows/release.yml` for multi-platform builds.
 
 ### CI/CD Integration
 
 **Automate testing and releases with GitHub Actions:**
 
-See `references/github-workflows/` for complete workflow examples:
-
-- `ci.yml` - Run tests, build, and lint on every push/PR
-- `release.yml` - Automated releases with GoReleaser
+Read `references/github-workflows/ci.yml` and `references/github-workflows/release.yml` when:
+- Setting up CI for a new Go CLI project (ci.yml covers test, build, lint)
+- Configuring automated releases with goreleaser (release.yml covers multi-platform builds)
 
 **Quick Setup:**
 
@@ -1080,9 +452,63 @@ func (c *Config) SetContext(name string) error {
         }
         return fmt.Errorf("context '%s' not found. Available: %v", name, available)
     }
-    
+
     c.CurrentContext = name
     return nil
+}
+```
+
+### Authentication Command Helper Functions
+
+These helpers eliminate code duplication across login, logout, and context commands:
+
+```go
+// selectContextInteractive displays available contexts and prompts for selection.
+// Returns selected context name or error.
+func selectContextInteractive(cfg *config.Config, prompt string) (string, error) {
+    if len(cfg.Contexts) == 0 {
+        return "", fmt.Errorf("no contexts available")
+    }
+
+    fmt.Fprintln(os.Stderr, "Available contexts:")
+    names := make([]string, 0, len(cfg.Contexts))
+    i := 1
+    for name := range cfg.Contexts {
+        marker := ""
+        if name == cfg.CurrentContext {
+            marker = " (current)"
+        }
+        fmt.Fprintf(os.Stderr, "  %d. %s%s\n", i, name, marker)
+        names = append(names, name)
+        i++
+    }
+    fmt.Fprintf(os.Stderr, "\n%s [1]: ", prompt)
+    var selection string
+    fmt.Scanln(&selection)
+
+    if selection == "" {
+        return names[0], nil
+    }
+    idx, err := strconv.Atoi(selection)
+    if err != nil || idx < 1 || idx > len(names) {
+        return "", fmt.Errorf("invalid selection")
+    }
+    return names[idx-1], nil
+}
+
+// confirmAction prompts for y/N confirmation. Returns true if confirmed.
+func confirmAction(prompt string) bool {
+    fmt.Fprintf(os.Stderr, "%s [y/N]: ", prompt)
+    var response string
+    fmt.Scanln(&response)
+    return strings.ToLower(response) == "y" || strings.ToLower(response) == "yes"
+}
+
+// readSecret reads a password/token without echo
+func readSecret() string {
+    byteSecret, _ := term.ReadPassword(int(os.Stdin.Fd()))
+    fmt.Println()
+    return string(byteSecret)
 }
 ```
 
@@ -1091,101 +517,98 @@ func (c *Config) SetContext(name string) error {
 ```go
 package cmd
 
+var noInput bool
+
 var loginCmd = &cobra.Command{
     Use:   "login [context-name]",
     Short: "Authenticate and create a new context",
-    Example: `  # Login with API key
-  myapp login production --api-key=YOUR_API_KEY
-
-  # Login with token (interactive)
-  myapp login staging --token
-
-  # Login to specific server
-  myapp login dev --server=https://dev.example.com --api-key=KEY`,
+    Example: `  myapp login                  # Interactive
+  myapp login prod --server=https://api.example.com --api-key=KEY`,
     RunE: func(cmd *cobra.Command, args []string) error {
-        if len(args) == 0 {
-            return fmt.Errorf("context name required")
+        cfg, _ := config.Load()
+        if cfg == nil {
+            cfg = &config.Config{Contexts: make(map[string]*config.Context)}
         }
-        
-        contextName := args[0]
-        server, _ := cmd.Flags().GetString("server")
-        apiKey, _ := cmd.Flags().GetString("api-key")
-        useToken, _ := cmd.Flags().GetBool("token")
-        username, _ := cmd.Flags().GetString("username")
-        insecure, _ := cmd.Flags().GetBool("insecure")
-        
-        // Get credentials interactively if not provided
-        if apiKey == "" && !useToken {
-            return fmt.Errorf("--api-key or --token required")
+
+        interactive := isInteractive() && !noInput
+        var contextName, server, apiKey, token, username string
+        var useToken, insecure bool
+
+        // Get context name
+        if len(args) > 0 {
+            contextName = args[0]
+        } else if interactive {
+            fmt.Print("Context name: ")
+            fmt.Scanln(&contextName)
+        } else {
+            return fmt.Errorf("context name required (use 'myapp login <name>')")
         }
-        
-        var token string
-        if useToken {
-            var err error
-            token, err = readPassword("Token: ")
-            if err != nil {
-                return err
+
+        // Get server URL (interactive only in this simplified version)
+        if interactive {
+            fmt.Print("Server URL: ")
+            fmt.Scanln(&server)
+        }
+
+        // Get credentials
+        if interactive {
+            fmt.Println("Auth method: 1=API Key, 2=Token")
+            fmt.Print("Select: ")
+            var sel string
+            fmt.Scanln(&sel)
+            if sel == "1" {
+                fmt.Print("API Key: ")
+                apiKey = readSecret()
+            } else if sel == "2" {
+                fmt.Print("Token: ")
+                token = readSecret()
+                useToken = true
+            }
+            if interactive && confirmAction("Allow insecure connections?") {
+                insecure = true
             }
         }
-        
-        // Create context
+
         ctx := &config.Context{
-            Name:     contextName,
-            Server:   server,
-            APIKey:   apiKey,
-            Token:    token,
-            Username: username,
-            AuthType: determineAuthType(apiKey, token),
-            Insecure: insecure,
+            Name: contextName, Server: server, APIKey: apiKey, Token: token,
+            Username: username, AuthType: determineAuthType(apiKey, token), Insecure: insecure,
         }
-        
-        // Test connection
+
         fmt.Fprintf(os.Stderr, "Authenticating to %s...\n", server)
         if err := testConnection(ctx); err != nil {
             return fmt.Errorf("authentication failed: %w", err)
         }
-        
-        // Save context
-        cfg, _ := config.Load()
-        if cfg.Contexts == nil {
-            cfg.Contexts = make(map[string]*config.Context)
-        }
+
         cfg.Contexts[contextName] = ctx
         cfg.CurrentContext = contextName
-        
         if err := config.Save(cfg); err != nil {
             return fmt.Errorf("failed to save context: %w", err)
         }
-        
+
         printSuccess(fmt.Sprintf("Logged in to '%s' (%s)", contextName, server))
-        fmt.Fprintf(os.Stderr, "\nCurrent context: %s\n", contextName)
-        
         return nil
     },
 }
 
 func init() {
-    loginCmd.Flags().String("server", "", "Server URL (required)")
-    loginCmd.Flags().String("api-key", "", "API key for authentication")
-    loginCmd.Flags().Bool("token", false, "Use token authentication (will prompt)")
-    loginCmd.Flags().String("username", "", "Username (if required)")
-    loginCmd.Flags().Bool("insecure", false, "Allow insecure server connections")
-    loginCmd.MarkFlagRequired("server")
+    loginCmd.Flags().StringVar(&server, "server", "", "Server URL")
+    loginCmd.Flags().StringVar(&apiKey, "api-key", "", "API key for authentication")
+    loginCmd.Flags().BoolVar(&useToken, "token", false, "Use token authentication")
+    loginCmd.Flags().StringVar(&username, "username", "", "Username")
+    loginCmd.Flags().BoolVar(&insecure, "insecure", false, "Allow insecure connections")
+    loginCmd.Flags().BoolVarP(&noInput, "no-input", "n", false, "Disable interactive prompts")
 }
 
 func testConnection(ctx *config.Context) error {
-    // Make a test API call
     client := createHTTPClient(ctx)
     resp, err := client.Get(ctx.Server + "/api/v1/ping")
     if err != nil {
         return err
     }
     defer resp.Body.Close()
-    
     if resp.StatusCode != 200 {
         return fmt.Errorf("server returned %d", resp.StatusCode)
     }
-    
     return nil
 }
 ```
@@ -1224,71 +647,93 @@ var contextListCmd = &cobra.Command{
     },
 }
 
-// myapp context set <name>
+// myapp context set [name]
 var contextSetCmd = &cobra.Command{
     Use:   "set [name]",
     Short: "Set the current context",
-    Example: `  myapp context set production
-  myapp context set staging`,
-    Args: cobra.ExactArgs(1),
+    Example: `  myapp context set           # Interactive selection
+  myapp context set production  # Direct set
+  myapp context set staging --no-input`,
     RunE: func(cmd *cobra.Command, args []string) error {
         cfg, err := config.Load()
         if err != nil {
             return err
         }
-        
-        if err := cfg.SetContext(args[0]); err != nil {
+
+        var contextName string
+        interactive := isInteractive() && !noInput
+
+        if len(args) > 0 {
+            contextName = args[0]
+        } else if interactive {
+            contextName, err = selectContextInteractive(cfg, "Select context")
+            if err != nil {
+                fmt.Fprintln(os.Stderr, "Run 'myapp login' to create one.")
+                return nil
+            }
+        } else {
+            return fmt.Errorf("context name required (use 'myapp context set <name>')")
+        }
+
+        if err := cfg.SetContext(contextName); err != nil {
             return err
         }
-        
         if err := config.Save(cfg); err != nil {
             return fmt.Errorf("failed to save config: %w", err)
         }
-        
-        printSuccess(fmt.Sprintf("Switched to context '%s'", args[0]))
+
+        printSuccess(fmt.Sprintf("Switched to context '%s'", contextName))
         return nil
     },
 }
 
-// myapp context delete <name>
+// myapp context delete [name]
 var contextDeleteCmd = &cobra.Command{
     Use:   "delete [name]",
     Short: "Delete a context",
-    Example: `  myapp context delete old-staging`,
-    Args: cobra.ExactArgs(1),
+    Example: `  myapp context delete           # Interactive selection
+  myapp context delete old-staging`,
     RunE: func(cmd *cobra.Command, args []string) error {
         cfg, err := config.Load()
         if err != nil {
             return err
         }
-        
-        name := args[0]
-        
-        // Confirm deletion
-        if !force {
-            confirmed, err := Confirm(fmt.Sprintf("Delete context '%s'?", name))
+
+        var contextName string
+        interactive := isInteractive() && !noInput
+
+        if len(args) > 0 {
+            contextName = args[0]
+        } else if interactive {
+            contextName, err = selectContextInteractive(cfg, "Select context to delete")
             if err != nil {
-                return err
-            }
-            if !confirmed {
-                fmt.Fprintln(os.Stderr, "Cancelled.")
                 return nil
             }
+        } else {
+            return fmt.Errorf("context name required (use 'myapp context delete <name>')")
         }
-        
-        delete(cfg.Contexts, name)
-        
-        // If deleted context was current, clear it
-        if cfg.CurrentContext == name {
+
+        ctx, ok := cfg.Contexts[contextName]
+        if !ok {
+            return fmt.Errorf("context '%s' not found", contextName)
+        }
+
+        if interactive && !confirmAction(fmt.Sprintf("Delete context '%s' (%s)?", contextName, ctx.Server)) {
+            fmt.Fprintln(os.Stderr, "Cancelled.")
+            return nil
+        }
+
+        delete(cfg.Contexts, contextName)
+        if cfg.CurrentContext == contextName {
             cfg.CurrentContext = ""
-            fmt.Fprintln(os.Stderr, "Note: Deleted context was current. Run 'myapp context set <name>' to select another.")
+            fmt.Fprintln(os.Stderr, "Note: Deleted context was current. Run 'myapp context set' to select another.")
         }
-        
+
         if err := config.Save(cfg); err != nil {
             return fmt.Errorf("failed to save config: %w", err)
         }
-        
-        printSuccess(fmt.Sprintf("Deleted context '%s'", name))
+
+        printSuccess(fmt.Sprintf("Deleted context '%s'", contextName))
         return nil
     },
 }
@@ -1348,41 +793,48 @@ package cmd
 var logoutCmd = &cobra.Command{
     Use:   "logout [context-name]",
     Short: "Logout from a context (removes credentials)",
-    Example: `  # Logout from current context
-  myapp logout
-
-  # Logout from specific context
-  myapp logout production`,
+    Example: `  myapp logout              # Interactive (current context)
+  myapp logout production  # Direct specify`,
     RunE: func(cmd *cobra.Command, args []string) error {
         cfg, err := config.Load()
         if err != nil {
             return err
         }
-        
+
         var contextName string
+        interactive := isInteractive() && !noInput
+
         if len(args) > 0 {
             contextName = args[0]
+        } else if interactive {
+            contextName, err = selectContextInteractive(cfg, "Select context to logout")
+            if err != nil {
+                return nil
+            }
         } else {
             contextName = cfg.CurrentContext
+            if contextName == "" {
+                return fmt.Errorf("no context specified and no current context")
+            }
         }
-        
-        if contextName == "" {
-            return fmt.Errorf("no context specified and no current context. Use 'myapp logout <context>'")
-        }
-        
+
         ctx, ok := cfg.Contexts[contextName]
         if !ok {
             return fmt.Errorf("context '%s' not found", contextName)
         }
-        
-        // Clear credentials
+
+        if interactive && !confirmAction(fmt.Sprintf("Logout from '%s' (%s)?", contextName, ctx.Server)) {
+            fmt.Fprintln(os.Stderr, "Cancelled.")
+            return nil
+        }
+
         ctx.APIKey = ""
         ctx.Token = ""
-        
+
         if err := config.Save(cfg); err != nil {
             return fmt.Errorf("failed to save config: %w", err)
         }
-        
+
         printSuccess(fmt.Sprintf("Logged out from '%s'", contextName))
         return nil
     },
@@ -1465,34 +917,15 @@ func addAuthHeaders(req *http.Request, ctx *config.Context) {
 5. **Show current context** in prompt or status bar
 6. **Auto-select context** if only one exists
 
-### Complete Example
+## Reference Files
 
-See `references/` directory for:
-- `root-template.go` - Complete Cobra root command template
-- `checklist.md` - CLI quality checklist
-- `examples.md` - Additional code examples
-- `github-workflows/` - GitHub Actions CI/CD workflow examples
+Use these references when working on specific tasks:
 
-## Quick Start Commands
-
-Create a new CLI project in 30 seconds:
-
-```bash
-# 1. Create project directory
-mkdir myapp && cd myapp
-
-# 2. Initialize Go module
-go mod init github.com/yourusername/myapp
-
-# 3. Install dependencies
-go get github.com/spf13/cobra@latest
-go get github.com/mattn/go-isatty
-
-# 4. Create structure
-mkdir -p cmd internal/config internal/output
-
-# 5. Copy templates
-cp references/root-template.go cmd/root.go
-```
-
-Now edit `cmd/root.go` to customize for your application!
+| Reference | When to Read |
+|-----------|-------------|
+| `references/beginner-guide.md` | First Go CLI project or need project setup basics |
+| `references/root-template.go` | Need a starting point for a new CLI root command |
+| `references/checklist.md` | Reviewing or auditing an existing CLI for quality |
+| `references/examples.md` | Need additional code examples for specific features |
+| `references/github-workflows/ci.yml` | Setting up CI/CD for a new Go CLI project |
+| `references/github-workflows/release.yml` | Setting up automated releases with goreleaser |
