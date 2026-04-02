@@ -1471,6 +1471,7 @@ See `references/` directory for:
 - `root-template.go` - Complete Cobra root command template
 - `checklist.md` - CLI quality checklist
 - `examples.md` - Additional code examples
+- `github-workflows/` - GitHub Actions CI/CD workflow examples
 
 ## Quick Start Commands
 
