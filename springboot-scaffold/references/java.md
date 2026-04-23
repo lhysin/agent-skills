@@ -2,6 +2,7 @@
 
 ## When to Read This File
 - When generating `common/exception`, `common/advice`, or `config` classes
+- When creating empty package directories (add .gitkeep to each package)
 - When `Skeleton=on`, also generates Order/Payment related classes
 
 ## Template Substitution Rules

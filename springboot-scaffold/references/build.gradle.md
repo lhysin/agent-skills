@@ -8,17 +8,9 @@
 - **postgresql runtimeOnly** — Production DB defaults to PostgreSQL
 
 ```groovy
-buildscript {
-    ext {
-        spring_boot_version = project.findProperty('spring_boot_version') ?: '4.0.5'
-        lombok_version = project.findProperty('lombok_version') ?: '1.18.42'
-        openapi_version = project.findProperty('openapi_version') ?: '2.8.4'
-    }
-}
-
 plugins {
     id 'java'
-    id 'org.springframework.boot' version "$spring_boot_version"
+    id 'org.springframework.boot' version project.ext.springBootVersion
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -27,7 +19,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(project.findProperty('java_version') as Integer ?: 25)
+        languageVersion = JavaLanguageVersion.of(project.ext.javaVersion as Integer)
     }
 }
 

@@ -16,9 +16,8 @@ triggers:
 
 ## Template Files
 - `references/build.gradle.md` - build.gradle template (includes actuator)
-- `references/settings.gradle.md` - settings.gradle template
-- `references/gradle.properties.md` - gradle.properties template (version management)
-- `references/java.md` - Java class templates
+- `references/settings.gradle.md` - settings.gradle template with version definitions
+- `references/java.md` - Java class templates (also includes .gitkeep for empty packages)
 - `references/test.md` - Test class templates
 - `references/application.yml.md` - application.yml template (default, dev, prod + actuator)
 - `references/gitignore.md` - .gitignore template
@@ -104,16 +103,15 @@ external/payment/
 
 ## Execution Flow
 1. Verify ROOT and AppName (error if missing)
-2. Apply optional parameter defaults
+2. Apply optional parameter defaults (JavaVersion=25, Skeleton=off)
 3. Project root = current working directory (no `{ROOT}` subdirectory)
-4. build.gradle, settings.gradle → `references/build.gradle.md`, `references/settings.gradle.md`
-5. gradle.properties → `references/gradle.properties.md`
-6. .gitignore, README.md → `references/gitignore.md`, `references/readme.md`
-7. application*.yml files (default, dev, prod + actuator) → `references/application.yml.md`
-8. common/exception, common/advice, config classes → `references/java.md`
-9. Create base directories: domain/, external/ (all modes, no source files)
-10. If Skeleton=on: order domain + payment external + test classes (with source files)
-11. Output result summary
+4. Create build.gradle, settings.gradle (versions defined in settings.gradle pluginManagement)
+5. .gitignore, README.md → `references/gitignore.md`, `references/readme.md`
+6. application*.yml files (default, dev, prod + actuator) → `references/application.yml.md`
+7. common/exception, common/advice, config classes → `references/java.md`
+8. Create base directories: domain/, external/ with .gitkeep (all modes, no source files)
+9. If Skeleton=on: order domain + payment external + test classes (with source files)
+10. Output result summary
 
 ## Invalid Call Examples
 
