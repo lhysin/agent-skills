@@ -14,5 +14,5 @@ lombok_version=1.18.42
 openapi_version=2.8.4
 
 # Gradle
-gradle_version=8.14
+gradle_version=9.4.1
 ```
