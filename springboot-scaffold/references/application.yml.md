@@ -1,4 +1,4 @@
-# application.yml 템플릿
+# application.yml Template
 
 ## application.yml (default)
 

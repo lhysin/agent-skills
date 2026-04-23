@@ -1,4 +1,11 @@
-# build.gradle 템플릿
+# build.gradle Template
+
+## Dependency Selection Rationale
+- **spring-boot-starter-actuator** — Provides health, metrics, info endpoints. Required for production
+- **spring-boot-starter-log4j2** — Used over logback. Balances performance and flexibility
+- **springdoc-openapi-starter-webmvc-ui** — Swagger3 UI auto-generated, no separate JSON config needed
+- **H2 as runtimeOnly + testRuntimeOnly only** — Auto-excluded from prod build; safety mechanism
+- **postgresql runtimeOnly** — Production DB defaults to PostgreSQL
 
 ```groovy
 plugins {

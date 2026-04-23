@@ -1,4 +1,18 @@
-# Java 템플릿
+# Java Templates
+
+## When to Read This File
+- When generating `common/exception`, `common/advice`, or `config` classes
+- When `Skeleton=on`, also generates Order/Payment related classes
+
+## Template Substitution Rules
+
+| Placeholder | Description |
+|-------------|-------------|
+| `{$ROOT}` | Actual group ID (e.g., com.example) |
+| `{$AppName}` | Actual application name |
+| `{$JavaVersion}` | Java version (default: 25) |
+| `{$SpringBootVersion}` | Spring Boot version (default: 4.0.1) |
+| `{$LombokVersion}` | Lombok version (default: 1.18.42) |
 
 ## {$AppName}SpringBootApplication.java
 
@@ -24,8 +38,8 @@ public class {$AppName}SpringBootApplication {
 package {$ROOT}.common.exception;
 
 public enum ErrorCode {
-    // TODO: 에러 코드 정의
-    // INVALID_INPUT("INVALID_INPUT", "잘못된 입력입니다."),
+    // TODO: Define error codes
+    // INVALID_INPUT("INVALID_INPUT", "Invalid input."),
     ;
     private final String code;
     private final String message;
@@ -118,7 +132,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleException(Exception ex) {
         Map<String, Object> body = new HashMap<>();
         body.put("code", "INTERNAL_ERROR");
-        body.put("message", "예상치 못한 오류가 발생했습니다.");
+        body.put("message", "An unexpected error occurred.");
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
@@ -158,7 +172,7 @@ public class OpenApiConfig {
 
 ---
 
-## Skeleton ON일 때 생성되는 도메인/외부 패키지
+## Classes Generated When Skeleton is ON
 
 ### domain/order/controller/OrderController.java
 
@@ -351,7 +365,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class PaymentClient {
-    // TODO: 외부 결제 API 연동 구현
+    // TODO: Implement external payment API integration
 }
 ```
 

@@ -1,4 +1,4 @@
-# .gitignore 템플릿
+# .gitignore Template
 
 ```
 # Gradle

@@ -1,19 +1,19 @@
 # {$AppName}
 
-{$AppName} 프로젝트입니다.
+Project {$AppName}.
 
-## 기술 스택
+## Tech Stack
 
 - Java 25
 - Spring Boot 4.0.1
 - Spring Data JPA
-- H2 (개발/테스트)
-- PostgreSQL (프로덕션)
+- H2 (development/test)
+- PostgreSQL (production)
 - Lombok
 - Log4j2
 - Springdoc OpenAPI
 
-## 프로젝트 구조
+## Project Structure
 
 ```
 src/
@@ -31,40 +31,40 @@ src/
 └── test/
 ```
 
-## 빌드 및 실행
+## Build and Run
 
-### 빌드
+### Build
 ```bash
 ./gradlew build
 ```
 
-### 실행
+### Run
 ```bash
 ./gradlew bootRun
 ```
 
-### 테스트
+### Test
 ```bash
 ./gradlew test
 ```
 
-## API 문서
+## API Documentation
 
 - Swagger UI: http://localhost:8080/swagger-ui.html
 - OpenAPI Spec: http://localhost:8080/v3/api-docs
 
-## 프로필
+## Profiles
 
-| 프로필 | 설명 |
-|--------|------|
-| default | H2 인메모리 DB |
-| dev | H2 개발용 DB |
-| prod | PostgreSQL 프로덕션 DB |
+| Profile | Description |
+|---------|-------------|
+| default | H2 in-memory DB |
+| dev | H2 development DB |
+| prod | PostgreSQL production DB |
 
-## 환경 변수
+## Environment Variables
 
-| 변수 | 설명 | 기본값 |
-|------|------|--------|
-| APP_NAME | 애플리케이션 이름 | app |
-| DB_USERNAME | DB 사용자명 | - |
-| DB_PASSWORD | DB 비밀번호 | - |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| APP_NAME | Application name | app |
+| DB_USERNAME | DB username | - |
+| DB_PASSWORD | DB password | - |

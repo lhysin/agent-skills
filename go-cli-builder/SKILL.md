@@ -374,20 +374,112 @@ Read `references/github-workflows/ci.yml` and `references/github-workflows/relea
 - Multi-platform releases (Linux, macOS, Windows)
 - ARM64 and AMD64 support
 
-### Uninstall Instructions
+## Testing
 
-**Make uninstall easy:**
+**Test CLI commands** using `cobra.Command.Execute()` and capture output:
 
-```bash
-# Installation
-curl -sSL https://example.com/install.sh | sh
+```go
+import (
+    "bytes"
+    "testing"
+)
 
-# Uninstallation
-myapp uninstall
-# or
-rm /usr/local/bin/myapp
-rm -rf ~/.config/myapp
+// Test command execution
+func TestLoginCommand(t *testing.T) {
+    buf := new(bytes.Buffer)
+    rootCmd.SetOut(buf)
+    rootCmd.SetErr(buf)
+    rootCmd.SetArgs([]string{"login", "testctx", "--server=https://api.test.com", "--api-key=testkey"})
+
+    err := rootCmd.Execute()
+    if err != nil {
+        t.Errorf("login failed: %v", err)
+    }
+
+    output := buf.String()
+    if !strings.Contains(output, "Logged in") {
+        t.Errorf("expected success message, got: %s", output)
+    }
+}
+
+// Test help output
+func TestHelpOutput(t *testing.T) {
+    buf := new(bytes.Buffer)
+    rootCmd.SetOut(buf)
+    rootCmd.SetArgs([]string{"--help"})
+
+    err := rootCmd.Execute()
+    if err != nil {
+        t.Errorf("help failed: %v", err)
+    }
+
+    output := buf.String()
+    if !strings.Contains(output, "Usage:") {
+        t.Errorf("expected usage info, got: %s", output)
+    }
+}
+
+// Test with no-input flag (non-interactive mode)
+func TestNoInputFlag(t *testing.T) {
+    buf := new(bytes.Buffer)
+    rootCmd.SetOut(buf)
+    rootCmd.SetErr(buf)
+    rootCmd.SetArgs([]string{"login", "--no-input"})
+
+    err := rootCmd.Execute()
+    if err == nil {
+        t.Error("expected error for missing required args in non-interactive mode")
+    }
+}
 ```
+
+**Use table-driven tests** for multiple flag combinations:
+
+```go
+func TestFlagCombinations(t *testing.T) {
+    tests := []struct {
+        name    string
+        args    []string
+        wantErr bool
+   }{
+        {"json output", []string{"--json"}, false},
+        {"quiet mode", []string{"-q"}, false},
+        {"debug flag", []string{"--debug"}, false},
+        {"combined", []string{"--json", "-q"}, false},
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            buf := new(bytes.Buffer)
+            rootCmd.SetOut(buf)
+            rootCmd.SetArgs(tt.args)
+            err := rootCmd.Execute()
+            if (err != nil) != tt.wantErr {
+                t.Errorf("args %v: wantErr %v, got err %v", tt.args, tt.wantErr, err)
+            }
+        })
+    }
+}
+```
+
+**Mock TTY detection** for interactive tests:
+
+```go
+// For interactive tests, conditionally skip in non-TTY environments
+func TestInteractiveOnly(t *testing.T) {
+    if !isInteractive() {
+        t.Skip("skipping interactive test in non-TTY environment")
+    }
+    // Interactive test code
+}
+```
+
+**Test patterns:**
+- `cmd.SetArgs()` - simulate command-line arguments
+- `cmd.SetOut(buf)` / `cmd.SetErr(buf)` - capture stdout/stderr
+- `bytes.Buffer` - collect output for assertions
+- Table-driven tests - test multiple flag combinations
+- `exec.Command` - test actual binary behavior in integration tests
 
 ## README Documentation
 
