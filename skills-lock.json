@@ -15,6 +15,11 @@
       "source": "softaworks/agent-toolkit",
       "sourceType": "github",
       "computedHash": "ff132ba281d460d3cf7814601e304f24e795a606a8e20e78f1bd103258bc735c"
+    },
+    "springboot-scaffold": {
+      "source": "lhysin/agent-skills",
+      "sourceType": "github",
+      "computedHash": "00d4bfc9ce1b43989343981222b80200c785410916f71a4b204147b8ba53eba2"
     }
   }
 }
