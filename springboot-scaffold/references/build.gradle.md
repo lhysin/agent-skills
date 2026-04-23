@@ -19,7 +19,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of((java_version ?: '25') as Integer)
+        languageVersion = JavaLanguageVersion.of(java_version as Integer)
     }
 }
 
