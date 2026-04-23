@@ -1,4 +1,4 @@
-# gradle.properties 템플릿
+# gradle.properties 템플릿 (버전 정의)
 
 ```properties
 # Java

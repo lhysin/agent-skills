@@ -10,7 +10,7 @@
 ```groovy
 plugins {
     id 'java'
-    id 'org.springframework.boot' version project.findProperty('spring_boot_version')
+    id 'org.springframework.boot' version "${spring_boot_version}"
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -19,7 +19,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(project.findProperty('java_version') as Integer)
+        languageVersion = JavaLanguageVersion.of((java_version ?: '25') as Integer)
     }
 }
 
@@ -39,23 +39,23 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-log4j2'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${project.findProperty('openapi_version')}"
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${openapi_version}"
 
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'com.h2database:h2'
 
-    compileOnly "org.projectlombok:lombok:${project.findProperty('lombok_version')}"
-    annotationProcessor "org.projectlombok:lombok:${project.findProperty('lombok_version')}"
+    compileOnly "org.projectlombok:lombok:${lombok_version}"
+    annotationProcessor "org.projectlombok:lombok:${lombok_version}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testCompileOnly "org.projectlombok:lombok:${project.findProperty('lombok_version')}"
-    testAnnotationProcessor "org.projectlombok:lombok:${project.findProperty('lombok_version')}"
+    testCompileOnly "org.projectlombok:lombok:${lombok_version}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombok_version}"
     testRuntimeOnly 'com.h2database:h2'
 }
 
 dependencyManagement {
     imports {
-        mavenBom "org.springframework.boot:spring-boot-dependencies:${project.findProperty('spring_boot_version')}"
+        mavenBom "org.springframework.boot:spring-boot-dependencies:${spring_boot_version}"
     }
 }
 
