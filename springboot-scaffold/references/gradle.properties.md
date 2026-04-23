@@ -12,4 +12,7 @@ lombok_version=1.18.42
 
 # OpenAPI (springdoc)
 openapi_version=2.8.4
+
+# Gradle
+gradle_version=8.14
 ```
