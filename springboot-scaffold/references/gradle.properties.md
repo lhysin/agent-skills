@@ -11,7 +11,7 @@ spring_boot_version=4.0.5
 lombok_version=1.18.42
 
 # OpenAPI (springdoc)
-openapi_version=2.8.4
+openapi_version=3.0.1
 
 # Gradle
 gradle_version=9.4.1
