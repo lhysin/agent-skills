@@ -109,7 +109,7 @@ external/payment/
 3. Project root = current working directory (no `{ROOT}` subdirectory)
 4. Create gradle.properties (versions, gradle wrapper version)
 5. Create build.gradle, settings.gradle → `references/build.gradle.md`, `references/settings.gradle.md`
-6. Create gradlew (executable shell script from `references/gradlew.md`)
+6. Run `gradle wrapper` to generate gradlew, gradlew.bat, gradle/wrapper/
 7. .gitignore, README.md → `references/gitignore.md`, `references/readme.md`
 8. application*.yml files (default, dev, prod + actuator) → `references/application.yml.md`
 9. common/exception, common/advice, config classes → `references/java.md`
