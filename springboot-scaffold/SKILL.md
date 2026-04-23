@@ -32,62 +32,70 @@ triggers:
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `JavaVersion` | `25` | Java version |
-| `Skeleton` | `on` | Generate skeleton files (on/off) |
+| `Skeleton` | `off` | Generate sample source files (on/off) |
 
 ## Skeleton Selection Guide
-- **on**: New project start, demo/POC purposes
-- **off**: When adding only base structure to existing project
+- **on**: New project start, demo/POC purposes — full domain + external with sample source files
+- **off**: Production project base structure only — directories only, no source files
 
 ## Skeleton on/off Behavior
-- **on**: Full generation including `domain/order` and `external/payment`
-- **off**: Base directory structure only
+- **on**: Full generation including `domain/order` and `external/payment` with sample source code
+- **off**: Base directory structure only (`domain/`, `external/`), no source files
 
 ## Project Structure
 
 ```
-<ROOT>/
+<current-directory>/          ← Project root (no subdirectory for ROOT)
 ├── build.gradle
 ├── settings.gradle
 ├── gradle.properties
 ├── .gitignore
 ├── README.md
 ├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── <ROOT>/
-│   │   │       ├── <AppName>SpringBootApplication.java
-│   │   │       ├── common/
-│   │   │       │   ├── advice/
-│   │   │       │   │   └── GlobalExceptionHandler.java
-│   │   │       │   └── exception/
-│   │   │       │       ├── BaseException.java
-│   │   │       │       └── ErrorCode.java
-│   │   │       ├── config/
-│   │   │       │   └── OpenApiConfig.java
-│   │   │       ├── domain/
-│   │   │       │   └── order/
-│   │   │       │       ├── controller/OrderController.java
-│   │   │       │       ├── service/OrderService.java
-│   │   │       │       ├── repository/OrderRepository.java
-│   │   │       │       ├── entity/Order.java
-│   │   │       │       └── dto/OrderDto.java
-│   │   │       └── external/
-│   │   │           └── payment/
-│   │   │               ├── client/PaymentClient.java
-│   │   │               └── model/
-│   │   │                   ├── request/PaymentRequest.java
-│   │   │                   └── response/PaymentResponse.java
-│   │   └── resources/
-│   │       ├── application.yml
-│   │       ├── application-dev.yml
-│   │       └── application-prod.yml
+│   └── main/
+│       └── java/
+│           └── <ROOT>/      ← Package path (e.g., io/lhysin)
+│               ├── <AppName>SpringBootApplication.java
+│               ├── common/
+│               │   ├── advice/
+│               │   │   └── GlobalExceptionHandler.java
+│               │   └── exception/
+│               │       ├── BaseException.java
+│               │       └── ErrorCode.java
+│               ├── config/
+│               │   └── OpenApiConfig.java
+│               ├── domain/
+│               │   └── order/
+│               │       └── ...       ← directories only when Skeleton=off
+│               └── external/
+│                   └── payment/
+│                       └── ...       ← directories only when Skeleton=off
 │   └── test/
 │       └── java/
 │           └── <ROOT>/
 │               └── domain/
 │                   └── order/
 │                       └── service/
-│                           └── OrderServiceTest.java
+│                           └── OrderServiceTest.java  ← only when Skeleton=on
+└── src/main/resources/
+    ├── application.yml
+    ├── application-dev.yml
+    └── application-prod.yml
+```
+
+**Skeleton=on** — Full sample source files:
+```
+domain/order/
+├── controller/OrderController.java
+├── service/OrderService.java
+├── repository/OrderRepository.java
+├── entity/Order.java
+└── dto/OrderDto.java
+external/payment/
+├── client/PaymentClient.java
+└── model/
+    ├── request/PaymentRequest.java
+    └── response/PaymentResponse.java
 ```
 
 ## Template Substitution Rules
@@ -97,14 +105,14 @@ triggers:
 ## Execution Flow
 1. Verify ROOT and AppName (error if missing)
 2. Apply optional parameter defaults
-3. Create project directory structure
+3. Project root = current working directory (no `{ROOT}` subdirectory)
 4. build.gradle, settings.gradle → `references/build.gradle.md`, `references/settings.gradle.md`
 5. gradle.properties → `references/gradle.properties.md`
 6. .gitignore, README.md → `references/gitignore.md`, `references/readme.md`
 7. application*.yml files (default, dev, prod + actuator) → `references/application.yml.md`
 8. common/exception, common/advice, config classes → `references/java.md`
-9. If Skeleton=on: order domain + payment external integration + test classes
-10. If Skeleton=off: base structure only
+9. Create base directories: domain/, external/ (all modes, no source files)
+10. If Skeleton=on: order domain + payment external + test classes (with source files)
 11. Output result summary
 
 ## Invalid Call Examples
