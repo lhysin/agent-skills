@@ -109,7 +109,7 @@ external/payment/
 5. .gitignore, README.md → `references/gitignore.md`, `references/readme.md`
 6. application*.yml files (default, dev, prod + actuator) → `references/application.yml.md`
 7. common/exception, common/advice, config classes → `references/java.md`
-8. Create base directories: domain/, external/ with .gitkeep (all modes, no source files)
+8. Create base directories: domain/, external/ with .gitkeep in every empty package (all modes)
 9. If Skeleton=on: order domain + payment external + test classes (with source files)
 10. Output result summary
 
