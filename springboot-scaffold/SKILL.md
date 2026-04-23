@@ -55,7 +55,7 @@ triggers:
 │   └── main/
 │       └── java/
 │           └── <ROOT>/      ← Package path (e.g., io/lhysin)
-│               ├── <AppName>SpringBootApplication.java
+│               ├── <AppName>Application.java
 │               ├── common/
 │               │   ├── advice/
 │               │   │   └── GlobalExceptionHandler.java

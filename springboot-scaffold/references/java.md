@@ -14,7 +14,7 @@
 | `{$SpringBootVersion}` | Spring Boot version (default: 4.0.1) |
 | `{$LombokVersion}` | Lombok version (default: 1.18.42) |
 
-## {$AppName}SpringBootApplication.java
+## {$AppName}Application.java
 
 ```java
 package {$ROOT};
@@ -23,9 +23,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class {$AppName}SpringBootApplication {
+public class {$AppName}Application {
     public static void main(String[] args) {
-        SpringApplication.run({$AppName}SpringBootApplication.class, args);
+        SpringApplication.run({$AppName}Application.class, args);
     }
 }
 ```

@@ -20,7 +20,7 @@ src/
 ├── main/
 │   ├── java/
 │   │   └── {$ROOT}/
-│   │       ├── {$AppName}SpringBootApplication.java
+│   │       ├── {$AppName}Application.java
 │   │       ├── common/
 │   │       ├── config/
 │   │       ├── domain/
