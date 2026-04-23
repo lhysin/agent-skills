@@ -10,7 +10,7 @@
 ```groovy
 plugins {
     id 'java'
-    id 'org.springframework.boot' version project.ext.springBootVersion
+    id 'org.springframework.boot' version project.findProperty('spring_boot_version')
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -19,7 +19,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(project.ext.javaVersion as Integer)
+        languageVersion = JavaLanguageVersion.of(project.findProperty('java_version') as Integer)
     }
 }
 
