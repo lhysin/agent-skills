@@ -1,15 +1,17 @@
 ---
 name: springboot-scaffold
 description: |
-  Spring Boot project scaffolding automation skill. Use when the user requests "스프링부트 프로젝트 생성", "스프링부트 스캐폴딩", "새 스프링부트 앱 만들기", "spring boot scaffolding", or similar.
-  Generates domain structure (order), external integration (payment), and configuration files (build.gradle, application.yml). ROOT and AppName are required.
-  This skill only activates when both ROOT and AppName parameters are provided.
+  Spring Boot project scaffolding CLI tool. Use when the user requests "스프링부트 프로젝트 생성", "스프링부트 스캐폴딩", "새 스프링부트 앱 만들기", "spring boot scaffolding", or similar.
+  Generates domain structure (order), external integration (payment), and configuration files (build.gradle, application.yml).
+
+  ## Usage
+  /springboot-scaffold --ROOT <group-id> --AppName <app-name> [--JavaVersion 25] [--Skeleton on|off]
+
+  ## Examples
+    /springboot-scaffold --ROOT io.lhysin --AppName inkly
+    /springboot-scaffold --ROOT com.example --AppName DemoApp --Skeleton on
 triggers:
-  - "스프링부트 프로젝트 생성"
-  - "스프링부트 스캐폴딩"
-  - "새 스프링부트 앱"
-  - "spring boot scaffolding"
-  - "스프링부트 프로젝트 구조"
+  - "/springboot-scaffold"
 ---
 
 # Spring Boot Scaffolding Skill
