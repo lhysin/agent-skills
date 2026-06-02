@@ -7,7 +7,7 @@ Skill repository distributed through `skills.sh`.
 - `confluence-docs`: publish and verify Confluence pages from local Markdown, Mermaid, and CLI-driven workflows.
 - `clean-dead-code`: find, verify, and remove dead code with an evidence-driven and language-agnostic workflow.
 - `go-cli-builder`: design and implement high-quality Go CLI tools following clig.dev guidelines.
-- `springboot-scaffold`: generate Spring Boot project structure with domain (order), external integration (payment), and configuration files (build.gradle, application.yml).
+- `springboot-scaffold`: mechanically generate and validate a Spring Boot project scaffold, including Gradle files, profiles, base packages, and optional order/payment sample code.
 
 ## Install
 

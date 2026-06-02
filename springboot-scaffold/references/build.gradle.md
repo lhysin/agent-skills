@@ -4,7 +4,7 @@
 - **spring-boot-starter-actuator** — Provides health, metrics, info endpoints. Required for production
 - **spring-boot-starter-log4j2** — Used over logback. Balances performance and flexibility
 - **springdoc-openapi-starter-webmvc-ui** — Swagger3 UI auto-generated, no separate JSON config needed
-- **H2 as runtimeOnly + testRuntimeOnly only** — Auto-excluded from prod build; safety mechanism
+- **H2 as developmentOnly + testRuntimeOnly only** — Keeps H2 out of production runtime artifacts
 - **postgresql runtimeOnly** — Production DB defaults to PostgreSQL
 
 ```groovy
@@ -42,7 +42,7 @@ dependencies {
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${openapi_version}"
 
     runtimeOnly 'org.postgresql:postgresql'
-    runtimeOnly 'com.h2database:h2'
+    developmentOnly 'com.h2database:h2'
 
     compileOnly "org.projectlombok:lombok:${lombok_version}"
     annotationProcessor "org.projectlombok:lombok:${lombok_version}"
@@ -51,6 +51,7 @@ dependencies {
     testCompileOnly "org.projectlombok:lombok:${lombok_version}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombok_version}"
     testRuntimeOnly 'com.h2database:h2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 dependencyManagement {

@@ -1,58 +1,22 @@
-# Gradle Wrapper
+# Gradle Wrapper Notes
 
-## Simple Template
+`scripts/scaffold.py` is responsible for wrapper generation.
 
-Create gradlew by running:
-
-```bash
-gradle wrapper
-```
-
-Then make it executable:
+Preferred command inside the generated project:
 
 ```bash
+gradle wrapper --gradle-version 9.4.1
 chmod +x gradlew
 ```
 
-## For Scaffolding Template
+The generator runs this automatically when:
 
-Since scaffolding cannot run `gradle wrapper` directly, use this minimal gradlew that downloads wrapper on first run:
+- `--wrapper auto` is used and a local `gradle` command is available.
+- `--wrapper required` is used and a local `gradle` command is available.
 
-```bash
-#!/bin/sh
+Validation behavior:
 
-# Gradle Wrapper bootstrap
-# Downloads wrapper jar on first run if not present
+- Missing `gradlew`, `gradlew.bat`, or `gradle/wrapper/gradle-wrapper.properties` is a warning by default.
+- Missing wrapper files become an error when validation is run with `--strict-wrapper`.
 
-GRADLE_USER_HOME="${GRADLE_USER_HOME:-$HOME/.gradle}"
-WRAPPER_JAR="$GRADLE_USER_HOME/wrapper/dists/gradle-8.14-bin/*/gradle-8.14/lib/gradle-wrapper.jar"
-
-# If wrapper jar not found, bootstrap it
-if [ ! -f "$WRAPPER_JAR" ] || [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-    WRAPPER_URL="https://services.gradle.org/distributions/gradle-8.14-bin.zip"
-    echo "Downloading Gradle wrapper..."
-    mkdir -p "gradle/wrapper"
-    curl -sL "$WRAPPER_URL" -o "/tmp/gradle-8.14-bin.zip"
-    unzip -q "/tmp/gradle-8.14-bin.zip" -d "/tmp/" 2>/dev/null || true
-    cp "/tmp/gradle-8.14/lib/gradle-wrapper-*.jar" "gradle/wrapper/gradle-wrapper.jar" 2>/dev/null || \
-    cp "/tmp/gradle-8.14/lib/gradle-wrapper.jar" "gradle/wrapper/gradle-wrapper.jar" 2>/dev/null || true
-fi
-
-# Determine Java command
-if [ -n "$JAVA_HOME" ] ; then
-    JAVACMD="$JAVA_HOME/bin/java"
-else
-    JAVACMD="java"
-fi
-
-APP_HOME=$( cd "$( dirname "$0" )" && pwd )
-
-exec "$JAVACMD" -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain "$@"
-```
-
-## Alternative: Download gradle-wrapper.jar directly
-
-```bash
-mkdir -p gradle/wrapper
-curl -sL "https://raw.githubusercontent.com/gradle/gradle/v8.14.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
-```
+Do not handcraft `gradle-wrapper.jar` in the skill body. Let Gradle generate it, or return the generator warning so the user can run the wrapper command locally.

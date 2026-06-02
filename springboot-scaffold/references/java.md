@@ -12,7 +12,7 @@
 | `{$ROOT}` | Actual group ID (e.g., com.example) |
 | `{$AppName}` | Actual application name |
 | `{$JavaVersion}` | Java version (default: 25) |
-| `{$SpringBootVersion}` | Spring Boot version (default: 4.0.1) |
+| `{$SpringBootVersion}` | Spring Boot version (default: 4.0.5) |
 | `{$LombokVersion}` | Lombok version (default: 1.18.42) |
 
 ## {$AppName}Application.java
@@ -408,5 +408,5 @@ public record PaymentResponse(
 | `{$ROOT}` | 실제 그룹 ID (예: com.example) |
 | `{$AppName}` | 실제 애플리케이션 이름 |
 | `{$JavaVersion}` | Java 버전 (기본값: 25) |
-| `{$SpringBootVersion}` | Spring Boot 버전 (기본값: 4.0.1) |
+| `{$SpringBootVersion}` | Spring Boot 버전 (기본값: 4.0.5) |
 | `{$LombokVersion}` | Lombok 버전 (기본값: 1.18.42) |

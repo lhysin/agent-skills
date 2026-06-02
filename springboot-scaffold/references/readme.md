@@ -5,7 +5,7 @@ Project {$AppName}.
 ## Tech Stack
 
 - Java 25
-- Spring Boot 4.0.1
+- Spring Boot 4.0.5
 - Spring Data JPA
 - H2 (development/test)
 - PostgreSQL (production)
@@ -27,7 +27,8 @@ src/
 │   │       └── external/
 │   └── resources/
 │       ├── application.yml
-│       └── log4j2.xml
+│       ├── application-dev.yml
+│       └── application-prod.yml
 └── test/
 ```
 

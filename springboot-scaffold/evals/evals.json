@@ -1,0 +1,89 @@
+{
+  "skill_name": "springboot-scaffold",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/springboot-scaffold --root com.example --appname DemoApp",
+      "expected_output": "Project root contains the default skeleton=off scaffold and a successful validation result. No sample order/payment source files are generated.",
+      "files": [],
+      "expectations": [
+        "The agent runs scripts/scaffold.py rather than manually writing the scaffold.",
+        "The scaffold contains build.gradle, settings.gradle, gradle.properties, .gitignore, README.md, application YAML files, DemoAppApplication.java, common exception/advice classes, and OpenApiConfig.java.",
+        "The validation result reports ok=true with skeleton=off.",
+        "Empty domain, domain/order, external, and external/payment package directories contain .gitkeep files.",
+        "OrderController.java, OrderService.java, PaymentClient.java, and OrderServiceTest.java are absent."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "/springboot-scaffold --root io.lhysin --appname Inkly --skeleton on",
+      "expected_output": "Full project structure with sample source files and successful validation. Packages use io.lhysin.",
+      "files": [],
+      "expectations": [
+        "The agent runs scripts/scaffold.py with --skeleton on.",
+        "The scaffold includes order controller/service/repository/entity/dto files, payment client/request/response files, and OrderServiceTest.java.",
+        "All generated Java files use package declarations under io.lhysin.",
+        "Order.java has @Table(name = \"orders\").",
+        "OrderService.java uses @Transactional.",
+        "The validation result reports ok=true with skeleton=on."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "스프링부트 프로젝트 생성, 앱이름은 DemoApp",
+      "expected_output": "Skill returns the script's JSON error indicating that --root is missing and does not generate project files.",
+      "files": [],
+      "expectations": [
+        "The response uses the script error instead of inventing a separate error format.",
+        "The error code is INVALID_ARGUMENT or equivalent.",
+        "The message tells the user to provide --root with an example such as com.example."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "/springboot-scaffold --root com.mycompany --appname OrderService --java-version 21",
+      "expected_output": "Project is generated with Java version 21 and default skeleton=off behavior, followed by successful validation.",
+      "files": [],
+      "expectations": [
+        "gradle.properties contains java_version=21.",
+        "The validation command uses --java-version 21.",
+        "No sample order/payment source files are generated.",
+        "The validation result reports ok=true."
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "/springboot-scaffold --help",
+      "expected_output": "Skill returns help JSON from scripts/scaffold.py showing generate and validate usage and available parameters. No project files are created.",
+      "files": [],
+      "expectations": [
+        "The agent runs scripts/scaffold.py --help.",
+        "The JSON output includes generate and validate commands.",
+        "The help output includes --root, --appname, --java-version, --skeleton, --target, and wrapper-related options."
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "/springboot-scaffold --root com.example --appname DemoApp --skeleton maybe",
+      "expected_output": "Skill returns the script's JSON error indicating that --skeleton only accepts on or off, and does not generate project files.",
+      "files": [],
+      "expectations": [
+        "The response is a script-produced JSON error.",
+        "The error says --skeleton must be one of on/off.",
+        "No scaffold files are generated after invalid arguments."
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "/springboot-scaffold --root com.example --appname DemoApp --target ./existing-project",
+      "expected_output": "If files already exist in the target, the script writes colliding generated files as .new files, reports collisions, skips wrapper generation, and validates canonical files.",
+      "files": [],
+      "expectations": [
+        "Existing files are not overwritten without --force.",
+        "result.generation.collisions contains the original path and generated .new path.",
+        "Wrapper generation is skipped when collisions are present.",
+        "The final response does not claim the canonical files were overwritten."
+      ]
+    }
+  ]
+}

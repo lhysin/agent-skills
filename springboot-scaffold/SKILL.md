@@ -1,163 +1,127 @@
 ---
 name: springboot-scaffold
 description: |
-  Spring Boot project scaffolding CLI tool. Use when the user requests "스프링부트 프로젝트 생성", "스프링부트 스캐폴딩", "새 스프링부트 앱 만들기", "spring boot scaffolding", or similar.
-  Generates domain structure (order), external integration (payment), and configuration files (build.gradle, application.yml).
+  Generate and validate a Spring Boot project scaffold. Use this skill when the user asks for Spring Boot project creation, Spring Boot scaffolding, "스프링부트 프로젝트 생성", "스프링부트 스캐폴딩", "새 스프링부트 앱 만들기", or invokes /springboot-scaffold.
+  The scaffold is generated mechanically through scripts/scaffold.py and then checked with deterministic rules for package layout, Gradle dependencies, profiles, .gitkeep behavior, and optional sample domain code.
 
-  ## Usage
-  /springboot-scaffold --ROOT <group-id> --AppName <app-name> [--JavaVersion 25] [--Skeleton on|off]
-
-  ## Examples
-    /springboot-scaffold --ROOT io.lhysin --AppName inkly
-    /springboot-scaffold --ROOT com.example --AppName DemoApp --Skeleton on
-triggers:
-  - "/springboot-scaffold"
+  Usage:
+    /springboot-scaffold --root GROUP_ID --appname APP_NAME [--java-version 25] [--skeleton on|off] [--target PATH] [--help]
 ---
 
-# Spring Boot Scaffolding Skill
+# Spring Boot Scaffold
 
-## Template Files
-- `references/build.gradle.md` - build.gradle template (includes actuator)
-- `references/settings.gradle.md` - settings.gradle template
-- `references/gradle.properties.md` - gradle.properties template (versions, gradle wrapper)
-- `references/gradlew.md` - gradlew shell script template
-- `references/java.md` - Java class templates (.gitkeep for empty packages)
-- `references/test.md` - Test class templates
-- `references/application.yml.md` - application.yml template (default, dev, prod + actuator)
-- `references/gitignore.md` - .gitignore template
-- `references/readme.md` - README.md template
+## Primary Rule
 
-## Required Parameters
-- **ROOT**: Group ID (required, skill does not activate without this)
-- **AppName**: SpringBootApplication class name (required, skill does not activate without this)
+Generate the actual project skeleton with `scripts/scaffold.py`. Do not hand-copy templates into a project unless the script is missing or broken.
 
-## Optional Parameters (with defaults)
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `JavaVersion` | `25` | Java version |
-| `Skeleton` | `off` | Generate sample source files (on/off) |
+Script path relative to this skill:
 
-## Skeleton Selection Guide
-- **on**: New project start, demo/POC purposes — full domain + external with sample source files
-- **off**: Production project base structure only — directories only, no source files
-
-## Skeleton on/off Behavior
-- **on**: Full generation including `domain/order` and `external/payment` with sample source code
-- **off**: Base directory structure only (`domain/`, `external/`), no source files
-
-## Project Structure
-
-```
-<current-directory>/          ← Project root (no subdirectory for ROOT)
-├── build.gradle
-├── settings.gradle
-├── gradle.properties
-├── .gitignore
-├── README.md
-├── src/
-│   └── main/
-│       └── java/
-│           └── <ROOT>/      ← Package path (e.g., io/lhysin)
-│               ├── <AppName>Application.java
-│               ├── common/
-│               │   ├── advice/
-│               │   │   └── GlobalExceptionHandler.java
-│               │   └── exception/
-│               │       ├── BaseException.java
-│               │       └── ErrorCode.java
-│               ├── config/
-│               │   └── OpenApiConfig.java
-│               ├── domain/
-│               │   └── order/
-│               │       └── ...       ← directories only when Skeleton=off
-│               └── external/
-│                   └── payment/
-│                       └── ...       ← directories only when Skeleton=off
-│   └── test/
-│       └── java/
-│           └── <ROOT>/
-│               └── domain/
-│                   └── order/
-│                       └── service/
-│                           └── OrderServiceTest.java  ← only when Skeleton=on
-└── src/main/resources/
-    ├── application.yml
-    ├── application-dev.yml
-    └── application-prod.yml
+```bash
+python3 springboot-scaffold/scripts/scaffold.py
 ```
 
-**Skeleton=on** — Full sample source files:
-```
-domain/order/
-├── controller/OrderController.java
-├── service/OrderService.java
-├── repository/OrderRepository.java
-├── entity/Order.java
-└── dto/OrderDto.java
-external/payment/
-├── client/PaymentClient.java
-└── model/
-    ├── request/PaymentRequest.java
-    └── response/PaymentResponse.java
+When running from another working directory, use the absolute skill path.
+
+## Invocation Mapping
+
+For a normal request, run:
+
+```bash
+python3 springboot-scaffold/scripts/scaffold.py generate --root <group-id> --appname <app-name> --target <project-root> --java-version <version> --skeleton <on|off>
 ```
 
-## Template Substitution Rules
-- `{$ROOT}` → Actual ROOT value
-- `{$AppName}` → Actual AppName value
+If the user omits `--target`, use the current working directory. If the user omits `--java-version`, use `25`. If the user omits `--skeleton`, use `off`.
 
-## Execution Flow
-1. Verify ROOT and AppName (error if missing)
-2. Apply optional parameter defaults (JavaVersion=25, Skeleton=off)
-3. Project root = current working directory (no `{ROOT}` subdirectory)
-4. Create gradle.properties (versions, gradle wrapper version)
-5. Create build.gradle, settings.gradle → `references/build.gradle.md`, `references/settings.gradle.md`
-6. Run `gradle wrapper` to generate gradlew, gradlew.bat, gradle/wrapper/
-7. .gitignore, README.md → `references/gitignore.md`, `references/readme.md`
-8. application*.yml files (default, dev, prod + actuator) → `references/application.yml.md`
-9. common/exception, common/advice, config classes → `references/java.md`
-10. Create base directories: domain/, external/ with .gitkeep in every empty package (all modes)
-11. If Skeleton=on: order domain + payment external + test classes (with source files)
-12. Output result summary
+If the user asks for help or passes `--help`, run:
 
-## .gitkeep Generation Rule
-When Skeleton=off, add .gitkeep to every empty package directory:
-- `domain/` → `domain/.gitkeep`
-- `domain/order/` → `domain/order/.gitkeep`
-- `external/` → `external/.gitkeep`
-- `external/payment/` → `external/payment/.gitkeep`
-
-## Invalid Call Examples
-
-### ROOT missing
-```
-Input: "스프링부트 프로젝트 생성, 앱이름은 DemoApp"
-Error: "ROOT (group ID) is missing. Example: ROOT=com.example"
+```bash
+python3 springboot-scaffold/scripts/scaffold.py --help
 ```
 
-### AppName missing
+The script returns JSON. Read `ok`, `result.validation`, `result.generation.collisions`, and `next_actions` before responding.
+
+## Parameters
+
+| Parameter | Required | Default | Rule |
+|---|---:|---:|---|
+| `--root` | yes | - | Lowercase Java package root, for example `com.example` |
+| `--appname` | yes | - | Java class name starting with uppercase, for example `DemoApp` |
+| `--target` | no | `.` | Project root to write into |
+| `--java-version` | no | `25` | Integer `>= 17` |
+| `--skeleton` | no | `off` | `off` creates base packages only; `on` also creates sample order/payment code |
+
+Invalid parameters should be handled by the script. Return its JSON error message instead of inventing a different error.
+
+## Validation
+
+Generation validates automatically unless `--no-validate` is passed. To validate an existing scaffold, run:
+
+```bash
+python3 springboot-scaffold/scripts/scaffold.py validate --root <group-id> --appname <app-name> --target <project-root> --java-version <version> --skeleton <on|off>
 ```
-Input: "스프링부트 스캐폴딩, 그룹아이디는 com.test"
-Error: "AppName is missing. Example: AppName=DemoApp"
+
+Use `--strict-wrapper` only when wrapper files must be treated as a hard failure. Without it, missing wrapper files are warnings because wrapper generation depends on a local Gradle CLI.
+
+The validator checks these rules:
+
+- Required project files exist: `build.gradle`, `settings.gradle`, `gradle.properties`, `.gitignore`, `README.md`, application YAML files, application class, common exception/advice classes, and OpenAPI config.
+- Java package declarations use the requested `--root`.
+- `gradle.properties` contains one source of truth for Java, Spring Boot, Lombok, OpenAPI, and Gradle versions.
+- `build.gradle` includes web, JPA, validation, Log4j2, actuator, springdoc, Lombok, PostgreSQL, and test dependencies.
+- H2 is allowed only as `developmentOnly` and `testRuntimeOnly`; it must not be production `runtimeOnly`.
+- `application-prod.yml` uses PostgreSQL and `ddl-auto: validate`.
+- `skeleton=off` creates `.gitkeep` files for empty `domain`, `domain/order`, `external`, and `external/payment` packages and does not create sample order/payment source files.
+- `skeleton=on` creates order domain, payment external, and `OrderServiceTest.java`; `Order` uses an explicit table name and `OrderService` uses `@Transactional`.
+- No generated file contains unresolved placeholders.
+
+## Collision Policy
+
+Without `--force`, an existing file is not overwritten. The script writes the generated content to `{filename}.new` or `{filename}.new.N`, reports the collision in JSON, skips wrapper generation, and validates the canonical files that remain in place.
+
+Use `--force` only when the user clearly wants to overwrite existing scaffold files.
+
+## Generated Shape
+
+All modes create:
+
+```text
+build.gradle
+settings.gradle
+gradle.properties
+.gitignore
+README.md
+src/main/java/<root>/<AppName>Application.java
+src/main/java/<root>/common/advice/GlobalExceptionHandler.java
+src/main/java/<root>/common/exception/BaseException.java
+src/main/java/<root>/common/exception/ErrorCode.java
+src/main/java/<root>/config/OpenApiConfig.java
+src/main/resources/application.yml
+src/main/resources/application-dev.yml
+src/main/resources/application-prod.yml
 ```
 
-### Both missing
+`skeleton=on` also creates sample files under:
+
+```text
+src/main/java/<root>/domain/order/
+src/main/java/<root>/external/payment/
+src/test/java/<root>/domain/order/service/OrderServiceTest.java
 ```
-Input: "새 스프링부트 앱 만들어줘"
-Error: "Both ROOT and AppName are required.
-  ROOT example: com.example
-  AppName example: DemoApp"
-```
 
-## Do NOT Generate
+## Reference Loading
 
-Projects generated by this scaffolding are production-ready by default. Without the following, the project is incomplete:
+`scripts/scaffold.py` is the source of truth. Load files in `references/` only when the script cannot run or the user explicitly asks to inspect the older template notes:
 
-- **Without actuator** — No health check, metrics endpoints; production monitoring impossible
-- **JPA entity without @Table.name** — Table names colliding with SQL keywords (reservation, order, etc.) cause production outages
-- **build.gradle with runtimeOnly H2 only** — H2 included in prod build risks data loss
-- **resources directory without application.yml** — App fails to start; configuration cannot load
-- **service without @Transactional** — Data inconsistency during failure recovery
+- `references/build.gradle.md` for dependency rationale.
+- `references/application.yml.md` for profile rationale.
+- `references/java.md` and `references/test.md` for class template notes.
+- `references/gradlew.md` for wrapper fallback context.
 
-## File Collision Handling
-- **File already exists** — Generate as `{filename}.new` and prompt user for confirmation
-- **Directory creation permission denied** — Output error and halt execution
+## Do Not Generate
+
+- Do not handwrite the scaffold when the generator script can run.
+- Do not skip validation after generation.
+- Do not put H2 in production `runtimeOnly`.
+- Do not generate JPA entities for SQL-keyword tables without explicit `@Table(name = "...")`.
+- Do not create sample order/payment source files when `--skeleton off`.
+- Do not overwrite existing files unless the user asked for overwrite or `--force`.
