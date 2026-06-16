@@ -96,6 +96,7 @@
         "The agent runs scripts/scaffold.py validate with --convention strict.",
         "The validation result includes convention rules such as convention-package-path-alignment and convention-style-tooling.",
         "The validation result includes CJOS-derived convention rules such as convention-lombok-safety, convention-record-models, convention-test-naming, convention-jacoco-coverage, and convention-cjos-logback.",
+        "The validation result does not require convention-api-versioning, /api/external and /api/internal route prefixes, or API versioning unless explicitly requested.",
         "Strict convention gaps are reported as validation errors when they fail.",
         "The response separates script-reported errors and warnings from any human reviewer notes."
       ]

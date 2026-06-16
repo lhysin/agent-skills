@@ -62,7 +62,6 @@ These are deterministic and safe to run in `scripts/scaffold.py validate`.
 - Lombok usage should not include `@Data`, general-model `@Setter`, `toBuilder = true`, `val`, or production-code `var`.
 - Numeric validation should use `@Min`, `@Max`, `@Positive`, or related annotations instead of `@Size`.
 - Controller classes should include OpenAPI `@Tag`, handler methods should include `@Operation` and `@ApiResponse`, and exposed path/query/header parameters should use `@Parameter`.
-- API paths should use `/api/external/{version}/**` or `/api/internal/{version}/**` when versioning is enabled.
 - Application logs should not use `System.out.println`, `System.err.println`, dynamic `event={}`, or dynamic `message={}`.
 - Test class suffixes should be `*Test`, `*SliceTest`, or `*ArchitectureTest`.
 - Test methods should follow `{action}_when{condition}_{expectedResult}` and use `@DisplayName`.
@@ -82,6 +81,7 @@ Keep these as human review guidance unless the rule becomes precise enough for a
 - Exception responses should stay consistent across validation, domain, and unexpected errors.
 - Package boundaries should reflect domain ownership rather than incidental implementation detail.
 - Use `RuntimeException` or `IllegalArgumentException` carefully: domain value-object immediate validation can use `IllegalArgumentException`, but API business errors should use the application's standard exception model.
+- API versioning is optional. Apply it only when the project explicitly needs a version compatibility strategy.
 - API compatibility changes should not delete or rename existing request/response fields within the same major version.
 - Error responses should not expose internal exception messages, stack traces, or sensitive implementation details.
 - Logs should not include sensitive data or unnecessary request/response bodies.

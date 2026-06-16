@@ -89,6 +89,8 @@ The default `--convention basic` mode adds deterministic Java/Spring checks to v
 
 `basic` reports CJOS-specific project decisions, such as non-CJOS root packages, missing `.editorconfig`, missing formatter/checkstyle configuration, missing JaCoCo, or missing CJOS Logback fragments, as warnings. `strict` treats those advisory convention gaps as validation errors. Use `off` only when the user explicitly wants structure validation without convention audit.
 
+Do not enforce API versioning by default. Apply API versioning only when the user or target project explicitly requires a version compatibility strategy.
+
 ## Collision Policy
 
 Without `--force`, an existing file is not overwritten. The script writes the generated content to `{filename}.new` or `{filename}.new.N`, reports the collision in JSON, skips wrapper generation, and validates the canonical files that remain in place.

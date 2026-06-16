@@ -1015,39 +1015,6 @@ def find_test_method_violations(text: str) -> tuple[list[str], list[str]]:
     return naming_violations, display_name_violations
 
 
-def annotation_text(lines: list[str], index: int) -> str:
-    text = lines[index].strip()
-    paren_balance = text.count("(") - text.count(")")
-    cursor = index + 1
-    while paren_balance > 0 and cursor < len(lines):
-        next_line = lines[cursor].strip()
-        text += " " + next_line
-        paren_balance += next_line.count("(") - next_line.count(")")
-        cursor += 1
-    return text
-
-
-def find_api_version_violations(text: str, relative: str) -> list[str]:
-    violations = []
-    lines = text.splitlines()
-    for index, line in enumerate(lines):
-        if "@RequestMapping" in line:
-            annotation = annotation_text(lines, index)
-            if (
-                "/api/" in annotation
-                and "/api/external/{version}" not in annotation
-                and "/api/internal/{version}" not in annotation
-            ):
-                violations.append(
-                    f"{relative}:{index + 1} should use /api/external/{{version}} or /api/internal/{{version}}"
-                )
-        if MAPPING_ANNOTATION_RE.search(line):
-            annotation = annotation_text(lines, index)
-            if "version =" not in annotation:
-                violations.append(f"{relative}:{index + 1} handler mapping should declare version")
-    return violations
-
-
 def audit_code_conventions(
     target: Path,
     root: str,
@@ -1067,7 +1034,6 @@ def audit_code_conventions(
     record_type_violations = []
     numeric_size_violations = []
     api_doc_violations = []
-    api_version_violations = []
     log_violations = []
     test_naming_violations = []
     test_display_name_violations = []
@@ -1129,7 +1095,6 @@ def audit_code_conventions(
                 api_doc_violations.append(f"{relative} has handler mappings without @ApiResponse")
             if any(token in text for token in ("@PathVariable", "@RequestParam", "@RequestHeader")) and "@Parameter" not in text:
                 api_doc_violations.append(f"{relative} exposes path/query/header parameters without @Parameter")
-            api_version_violations.extend(find_api_version_violations(text, relative))
 
         if SYSTEM_PRINT_RE.search(text):
             log_violations.append(f"{relative} uses System.out/System.err print")
@@ -1223,12 +1188,6 @@ def audit_code_conventions(
         "convention-api-documentation",
         not api_doc_violations,
         f"Controllers should include OpenAPI documentation annotations: {api_doc_violations}",
-        severity=advisory_severity,
-    )
-    check(
-        "convention-api-versioning",
-        not api_version_violations,
-        f"API mappings should follow CJOS versioned external/internal paths: {api_version_violations}",
         severity=advisory_severity,
     )
     check(
