@@ -216,7 +216,7 @@ public class OrderController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<OrderDto> findById(
-            @Parameter(description = "주문 ID") @PathVariable Long id) {
+            @Parameter(description = "주문 ID", required = true) @PathVariable Long id) {
         return ResponseEntity.ok(orderService.findById(id));
     }
 
@@ -302,15 +302,24 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 ```java
 package {$ROOT}.domain.order.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "orders")
-@Data
+@Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

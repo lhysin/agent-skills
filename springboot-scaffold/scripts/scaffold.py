@@ -20,9 +20,56 @@ DEFAULTS = {
 
 ROOT_RE = re.compile(r"^[a-z_][a-z0-9_]*(\.[a-z_][a-z0-9_]*)*$")
 APPNAME_RE = re.compile(r"^[A-Z][A-Za-z0-9]*$")
+CJOS_ROOT_RE = re.compile(r"^cj\.enm\.[a-z][a-z0-9]*\.[a-z][a-z0-9]*\.(bffapi|domainapi|batch)$")
+PACKAGE_DECLARATION_RE = re.compile(r"^\s*package\s+([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*;", re.MULTILINE)
+PUBLIC_TYPE_RE = re.compile(
+    r"\bpublic\s+(?:abstract\s+|final\s+|sealed\s+|non-sealed\s+)?(?:class|interface|enum|record)\s+([A-Za-z_][A-Za-z0-9_]*)\b"
+)
+TYPE_DECLARATION_RE = re.compile(
+    r"^\s*(?:public\s+)?(?:abstract\s+|final\s+|sealed\s+|non-sealed\s+)?(class|interface|enum|record)\s+([A-Za-z_][A-Za-z0-9_]*)\b",
+    re.MULTILINE,
+)
+WILDCARD_IMPORT_RE = re.compile(r"^\s*import\s+(?:static\s+)?[A-Za-z_][A-Za-z0-9_.]*\.\*\s*;", re.MULTILINE)
+DATA_ANNOTATION_RE = re.compile(r"^\s*@Data\b", re.MULTILINE)
+SETTER_ANNOTATION_RE = re.compile(r"^\s*@Setter\b", re.MULTILINE)
+TO_BUILDER_RE = re.compile(r"@Builder\s*\([^)]*toBuilder\s*=\s*true", re.MULTILINE | re.DOTALL)
+LOMBOK_VAL_RE = re.compile(r"^\s*import\s+lombok\.val\s*;|\bval\s+[A-Za-z_][A-Za-z0-9_]*\s*=", re.MULTILINE)
+VAR_LOCAL_RE = re.compile(r"\bvar\s+[A-Za-z_][A-Za-z0-9_]*\s*=")
+SYSTEM_PRINT_RE = re.compile(r"\bSystem\.(?:out|err)\.print(?:ln)?\s*\(")
+DYNAMIC_LOG_FIELD_RE = re.compile(r'\blog\.(?:trace|debug|info|warn|error)\s*\(\s*"[^"]*(?:event=\{\}|message=\{\})')
+REST_CONTROLLER_RE = re.compile(r"@RestController\b")
+MAPPING_ANNOTATION_RE = re.compile(r"@(Get|Post|Put|Patch|Delete)Mapping\b")
+TEST_METHOD_ANNOTATION_RE = re.compile(r"^\s*@(Test|ParameterizedTest)\b")
 TEXT_SUFFIXES = {".gradle", ".properties", ".yml", ".yaml", ".java", ".md", ".txt", ".bat", ".sh"}
 TEXT_NAMES = {".gitignore", "gradlew"}
 IGNORED_TEXT_SCAN_DIRS = {".gradle", "build", ".git"}
+CONVENTION_MODES = {"off", "basic", "strict"}
+NUMERIC_JAVA_TYPES = {
+    "byte",
+    "short",
+    "int",
+    "long",
+    "float",
+    "double",
+    "Byte",
+    "Short",
+    "Integer",
+    "Long",
+    "Float",
+    "Double",
+    "BigDecimal",
+    "BigInteger",
+}
+LAYER_SUFFIXES = {
+    "controller": "Controller",
+    "service": "Service",
+    "repository": "Repository",
+    "dto": "Dto",
+    "config": "Config",
+    "client": "Client",
+    "request": "Request",
+    "response": "Response",
+}
 
 
 class JsonArgumentParser(argparse.ArgumentParser):
@@ -476,6 +523,7 @@ def skeleton_java_templates(context: dict[str, str]) -> dict[Path, str]:
 import {{ROOT}}.domain.order.dto.OrderDto;
 import {{ROOT}}.domain.order.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -513,7 +561,8 @@ public class OrderController {
         @ApiResponse(responseCode = "404", description = "Order not found")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<OrderDto> findById(@PathVariable Long id) {
+    public ResponseEntity<OrderDto> findById(
+            @Parameter(description = "Order ID", required = true) @PathVariable Long id) {
         return ResponseEntity.ok(orderService.findById(id));
     }
 
@@ -593,17 +642,18 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "orders")
-@Data
+@Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -680,6 +730,7 @@ public record PaymentResponse(
 import {{ROOT}}.domain.order.dto.OrderDto;
 import {{ROOT}}.domain.order.entity.Order;
 import {{ROOT}}.domain.order.repository.OrderRepository;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -694,6 +745,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("OrderService")
 class OrderServiceTest {
 
     @Mock
@@ -703,7 +755,8 @@ class OrderServiceTest {
     private OrderService orderService;
 
     @Test
-    void findAllReturnsOrders() {
+    @DisplayName("주문 목록이 있으면 주문 DTO 목록을 반환한다")
+    void findAll_whenOrdersExist_returnsOrderDtos() {
         Order order = Order.builder()
             .id(1L)
             .productName("Test Product")
@@ -719,7 +772,8 @@ class OrderServiceTest {
     }
 
     @Test
-    void findByIdReturnsOrderWhenOrderExists() {
+    @DisplayName("주문이 있으면 주문 DTO를 반환한다")
+    void findById_whenOrderExists_returnsOrderDto() {
         Order order = Order.builder()
             .id(1L)
             .productName("Test Product")
@@ -735,7 +789,8 @@ class OrderServiceTest {
     }
 
     @Test
-    void saveReturnsSavedOrder() {
+    @DisplayName("주문 생성 요청이 유효하면 저장된 주문 DTO를 반환한다")
+    void save_whenRequestIsValid_returnsSavedOrderDto() {
         OrderDto dto = OrderDto.builder()
             .productName("New Product")
             .quantity(5)
@@ -894,6 +949,331 @@ def is_text_scan_candidate(path: Path, target: Path) -> bool:
     return path.name in TEXT_NAMES or path.suffix in TEXT_SUFFIXES
 
 
+def package_declaration(text: str) -> str | None:
+    match = PACKAGE_DECLARATION_RE.search(text)
+    return match.group(1) if match else None
+
+
+def public_type_name(text: str) -> str | None:
+    match = PUBLIC_TYPE_RE.search(text)
+    return match.group(1) if match else None
+
+
+def type_declaration(text: str) -> tuple[str, str] | None:
+    match = TYPE_DECLARATION_RE.search(text)
+    if not match:
+        return None
+    return match.group(1), match.group(2)
+
+
+def expected_package_for_java_file(java_file: Path, target: Path) -> str | None:
+    for source_root in (target / "src/main/java", target / "src/test/java"):
+        try:
+            relative = java_file.relative_to(source_root)
+        except ValueError:
+            continue
+        return ".".join(relative.parent.parts)
+    return None
+
+
+def find_numeric_size_annotations(text: str) -> list[str]:
+    lines = text.splitlines()
+    violations = []
+    for index, line in enumerate(lines):
+        if "@Size" not in line:
+            continue
+        declaration = " ".join(lines[index : min(index + 4, len(lines))])
+        if any(re.search(rf"\b{java_type}\b", declaration) for java_type in NUMERIC_JAVA_TYPES):
+            violations.append(line.strip())
+    return violations
+
+
+def find_test_method_violations(text: str) -> tuple[list[str], list[str]]:
+    lines = text.splitlines()
+    naming_violations = []
+    display_name_violations = []
+    for index, line in enumerate(lines):
+        if not TEST_METHOD_ANNOTATION_RE.search(line):
+            continue
+        annotation_block = lines[max(0, index - 3) : index + 1]
+        method_name = None
+        for candidate in lines[index + 1 : min(index + 8, len(lines))]:
+            stripped = candidate.strip()
+            if not stripped or stripped.startswith("@"):
+                annotation_block.append(candidate)
+                continue
+            match = re.search(r"\b(?:void|[\w<>]+)\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", stripped)
+            if match:
+                method_name = match.group(1)
+            break
+        if not method_name:
+            continue
+        if "_when" not in method_name or method_name.count("_") < 2:
+            naming_violations.append(method_name)
+        if not any("@DisplayName" in item for item in annotation_block):
+            display_name_violations.append(method_name)
+    return naming_violations, display_name_violations
+
+
+def annotation_text(lines: list[str], index: int) -> str:
+    text = lines[index].strip()
+    paren_balance = text.count("(") - text.count(")")
+    cursor = index + 1
+    while paren_balance > 0 and cursor < len(lines):
+        next_line = lines[cursor].strip()
+        text += " " + next_line
+        paren_balance += next_line.count("(") - next_line.count(")")
+        cursor += 1
+    return text
+
+
+def find_api_version_violations(text: str, relative: str) -> list[str]:
+    violations = []
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if "@RequestMapping" in line:
+            annotation = annotation_text(lines, index)
+            if (
+                "/api/" in annotation
+                and "/api/external/{version}" not in annotation
+                and "/api/internal/{version}" not in annotation
+            ):
+                violations.append(
+                    f"{relative}:{index + 1} should use /api/external/{{version}} or /api/internal/{{version}}"
+                )
+        if MAPPING_ANNOTATION_RE.search(line):
+            annotation = annotation_text(lines, index)
+            if "version =" not in annotation:
+                violations.append(f"{relative}:{index + 1} handler mapping should declare version")
+    return violations
+
+
+def audit_code_conventions(
+    target: Path,
+    root: str,
+    java_files: list[Path],
+    gradle_text: str,
+    convention: str,
+    check,
+) -> None:
+    if convention == "off":
+        return
+
+    package_mismatches = []
+    type_mismatches = []
+    wildcard_imports = []
+    layer_suffix_mismatches = []
+    lombok_violations = []
+    record_type_violations = []
+    numeric_size_violations = []
+    api_doc_violations = []
+    api_version_violations = []
+    log_violations = []
+    test_naming_violations = []
+    test_display_name_violations = []
+    services_without_transactional = []
+    entities_without_table = []
+
+    for java_file in java_files:
+        text = read_text(java_file)
+        relative = rel_text(java_file, target)
+        try:
+            java_file.relative_to(target / "src/test/java")
+            is_test_file = True
+        except ValueError:
+            is_test_file = False
+        actual_package = package_declaration(text)
+        expected_package = expected_package_for_java_file(java_file, target)
+
+        if expected_package is not None and actual_package != expected_package:
+            package_mismatches.append(
+                f"{relative} expected package {expected_package}, found {actual_package or '<missing>'}"
+            )
+
+        actual_type = public_type_name(text)
+        if actual_type and actual_type != java_file.stem:
+            type_mismatches.append(f"{relative} declares public type {actual_type}")
+
+        if WILDCARD_IMPORT_RE.search(text):
+            wildcard_imports.append(relative)
+
+        declaration = type_declaration(text)
+        if declaration:
+            type_kind, type_name = declaration
+            if type_name.endswith(("Request", "Response", "Command", "Query")) and type_kind != "record":
+                record_type_violations.append(f"{relative} should declare {type_name} as record")
+            if (type_name.endswith("Entity") or "@Entity" in text) and type_kind == "record":
+                record_type_violations.append(f"{relative} JPA/domain entities should be class, not record")
+
+        if DATA_ANNOTATION_RE.search(text):
+            lombok_violations.append(f"{relative} uses @Data")
+        if SETTER_ANNOTATION_RE.search(text) and "@ConfigurationProperties" not in text:
+            lombok_violations.append(f"{relative} uses @Setter outside @ConfigurationProperties")
+        if TO_BUILDER_RE.search(text):
+            lombok_violations.append(f"{relative} uses @Builder(toBuilder = true)")
+        if LOMBOK_VAL_RE.search(text):
+            lombok_violations.append(f"{relative} uses lombok val")
+        if not is_test_file and VAR_LOCAL_RE.search(text):
+            lombok_violations.append(f"{relative} uses production-code var")
+
+        numeric_size_hits = find_numeric_size_annotations(text)
+        if numeric_size_hits:
+            numeric_size_violations.append(f"{relative}: {numeric_size_hits}")
+
+        if REST_CONTROLLER_RE.search(text):
+            if "@Tag" not in text:
+                api_doc_violations.append(f"{relative} is missing @Tag")
+            if MAPPING_ANNOTATION_RE.search(text) and "@Operation" not in text:
+                api_doc_violations.append(f"{relative} has handler mappings without @Operation")
+            if MAPPING_ANNOTATION_RE.search(text) and "@ApiResponse" not in text:
+                api_doc_violations.append(f"{relative} has handler mappings without @ApiResponse")
+            if any(token in text for token in ("@PathVariable", "@RequestParam", "@RequestHeader")) and "@Parameter" not in text:
+                api_doc_violations.append(f"{relative} exposes path/query/header parameters without @Parameter")
+            api_version_violations.extend(find_api_version_violations(text, relative))
+
+        if SYSTEM_PRINT_RE.search(text):
+            log_violations.append(f"{relative} uses System.out/System.err print")
+        if DYNAMIC_LOG_FIELD_RE.search(text):
+            log_violations.append(f"{relative} uses dynamic event={{}} or message={{}} log fields")
+
+        if is_test_file:
+            if not java_file.stem.endswith(("Test", "SliceTest", "ArchitectureTest")):
+                test_naming_violations.append(f"{relative} should use *Test, *SliceTest, or *ArchitectureTest")
+            naming_hits, display_name_hits = find_test_method_violations(text)
+            test_naming_violations.extend(f"{relative}#{name}" for name in naming_hits)
+            test_display_name_violations.extend(f"{relative}#{name}" for name in display_name_hits)
+            if "class " in text and "@DisplayName" not in text:
+                test_display_name_violations.append(f"{relative} test class is missing @DisplayName")
+
+        if actual_package:
+            package_segment = actual_package.split(".")[-1]
+            expected_suffix = LAYER_SUFFIXES.get(package_segment)
+            has_layer_suffix = java_file.stem.endswith(expected_suffix) if expected_suffix else True
+            has_test_layer_suffix = is_test_file and java_file.stem.endswith(f"{expected_suffix}Test")
+            if expected_suffix and not (has_layer_suffix or has_test_layer_suffix):
+                layer_suffix_mismatches.append(f"{relative} should end with {expected_suffix}")
+
+            if package_segment == "service" and java_file.stem.endswith("Service") and "@Transactional" not in text:
+                services_without_transactional.append(relative)
+
+        if "@Entity" in text and "@Table" not in text:
+            entities_without_table.append(relative)
+
+    check(
+        "convention-package-path-alignment",
+        not package_mismatches,
+        f"Java package declarations must match source paths: {package_mismatches}",
+    )
+    check(
+        "convention-public-type-filenames",
+        not type_mismatches,
+        f"Public Java type names must match filenames: {type_mismatches}",
+    )
+    check(
+        "convention-no-wildcard-imports",
+        not wildcard_imports,
+        f"Wildcard imports are not allowed: {wildcard_imports}",
+    )
+    check(
+        "convention-layer-suffixes",
+        not layer_suffix_mismatches,
+        f"Layer package filenames must use predictable suffixes: {layer_suffix_mismatches}",
+    )
+    check(
+        "convention-lombok-safety",
+        not lombok_violations,
+        f"Lombok usage violates CJOS conventions: {lombok_violations}",
+    )
+    check(
+        "convention-record-models",
+        not record_type_violations,
+        f"Request/Response/Command/Query models should be records and entities should be classes: {record_type_violations}",
+    )
+    check(
+        "convention-validation-annotations",
+        not numeric_size_violations,
+        f"Numeric fields should not use @Size for range validation: {numeric_size_violations}",
+    )
+    check(
+        "convention-logging-patterns",
+        not log_violations,
+        f"Logging code violates CJOS conventions: {log_violations}",
+    )
+
+    advisory_severity = "error" if convention == "strict" else "warning"
+    check(
+        "convention-cjos-root-package",
+        bool(CJOS_ROOT_RE.match(root)),
+        "CJOS root package should follow cj.enm.<site>.<service>.<bffapi|domainapi|batch>.",
+        severity=advisory_severity,
+    )
+    check(
+        "convention-transactional-services",
+        not services_without_transactional,
+        f"Service classes under .service should declare transaction boundaries: {services_without_transactional}",
+        severity=advisory_severity,
+    )
+    check(
+        "convention-explicit-entity-tables",
+        not entities_without_table,
+        f"JPA entities should declare explicit @Table names: {entities_without_table}",
+        severity=advisory_severity,
+    )
+    check(
+        "convention-api-documentation",
+        not api_doc_violations,
+        f"Controllers should include OpenAPI documentation annotations: {api_doc_violations}",
+        severity=advisory_severity,
+    )
+    check(
+        "convention-api-versioning",
+        not api_version_violations,
+        f"API mappings should follow CJOS versioned external/internal paths: {api_version_violations}",
+        severity=advisory_severity,
+    )
+    check(
+        "convention-test-naming",
+        not test_naming_violations and not test_display_name_violations,
+        f"Tests should use CJOS naming and @DisplayName rules: names={test_naming_violations}, displayNames={test_display_name_violations}",
+        severity=advisory_severity,
+    )
+    check(
+        "convention-editorconfig",
+        (target / ".editorconfig").exists(),
+        "Project should include .editorconfig so editor formatting is stable.",
+        severity=advisory_severity,
+    )
+
+    gradle_lower = gradle_text.lower()
+    has_style_tool = any(token in gradle_lower for token in ("spotless", "checkstyle", "google-java-format"))
+    has_jacoco = "id 'jacoco'" in gradle_text or 'id "jacoco"' in gradle_text
+    has_coverage_rule = "jacocoTestCoverageVerification" in gradle_text and "0.70" in gradle_text
+    check(
+        "convention-style-tooling",
+        has_style_tool,
+        "build.gradle should declare a formatter or style checker such as Spotless or Checkstyle.",
+        severity=advisory_severity,
+    )
+    check(
+        "convention-jacoco-coverage",
+        has_jacoco and has_coverage_rule,
+        "build.gradle should include jacoco and a 70% line coverage verification rule.",
+        severity=advisory_severity,
+    )
+    logback_text = read_text(target / "src/main/resources/logback-spring.xml")
+    has_cjos_logback = (
+        "log/cjos-log-defaults.xml" in logback_text
+        and "log/cjos-log-console-appender.xml" in logback_text
+        and "log/cjos-log-json-console-appender.xml" in logback_text
+    )
+    check(
+        "convention-cjos-logback",
+        has_cjos_logback,
+        "logback-spring.xml should include CJOS Logback fragments for standard logging.",
+        severity=advisory_severity,
+    )
+
+
 def validate_project(
     target: Path,
     root: str,
@@ -901,6 +1281,7 @@ def validate_project(
     java_version: str,
     skeleton: str,
     strict_wrapper: bool,
+    convention: str,
 ) -> dict[str, object]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -1053,6 +1434,8 @@ def validate_project(
         missing_gitkeep = [str(path / ".gitkeep") for path in gitkeep_dirs if not (target / path / ".gitkeep").exists()]
         check("gitkeep-for-empty-packages", not missing_gitkeep, f"Missing .gitkeep files: {missing_gitkeep}")
 
+    audit_code_conventions(target, root, java_files, gradle_text, convention, check)
+
     return {
         "ok": not errors,
         "errors": errors,
@@ -1064,10 +1447,17 @@ def validate_project(
             "total": len(rules),
         },
         "rules": rules,
+        "convention": convention,
     }
 
 
-def validate_arguments(root: str | None, appname: str | None, java_version: str, skeleton: str) -> list[str]:
+def validate_arguments(
+    root: str | None,
+    appname: str | None,
+    java_version: str,
+    skeleton: str,
+    convention: str,
+) -> list[str]:
     errors = []
     if not root:
         errors.append("Missing --root. Example: --root com.example")
@@ -1081,23 +1471,33 @@ def validate_arguments(root: str | None, appname: str | None, java_version: str,
         errors.append("--java-version must be an integer >= 17")
     if skeleton not in {"on", "off"}:
         errors.append("--skeleton must be either on or off")
+    if convention not in CONVENTION_MODES:
+        errors.append("--convention must be one of off, basic, or strict")
     return errors
 
 
-def next_actions(root: str | None, appname: str | None, target: str | None, skeleton: str | None) -> list[dict[str, object]]:
+def next_actions(
+    root: str | None,
+    appname: str | None,
+    target: str | None,
+    skeleton: str | None,
+    convention: str | None = None,
+) -> list[dict[str, object]]:
     root_value = root or "<group-id>"
     app_value = appname or "<app-name>"
     target_value = target or "."
     skeleton_value = skeleton or "off"
+    convention_value = convention or "basic"
     return [
         {
-            "command": "python3 springboot-scaffold/scripts/scaffold.py validate --root <group-id> --appname <app-name> [--target <path>] [--skeleton <on|off>]",
-            "description": "Validate the generated scaffold against deterministic rules.",
+            "command": "python3 springboot-scaffold/scripts/scaffold.py validate --root <group-id> --appname <app-name> [--target <path>] [--skeleton <on|off>] [--convention <basic|strict|off>]",
+            "description": "Validate the generated scaffold and run the convention audit.",
             "params": {
                 "group-id": {"value": root_value, "description": "Java package root"},
                 "app-name": {"value": app_value, "description": "SpringBootApplication class prefix"},
                 "path": {"value": target_value, "default": ".", "description": "Project root directory"},
                 "on|off": {"value": skeleton_value, "enum": ["on", "off"]},
+                "basic|strict|off": {"value": convention_value, "enum": ["basic", "strict", "off"]},
             },
         },
         {
@@ -1121,16 +1521,16 @@ def command_tree(command: str) -> int:
             "ok": True,
             "command": command,
             "result": {
-                "description": "Generate or validate a Spring Boot scaffold.",
+                "description": "Generate, validate, or convention-audit a Spring Boot scaffold.",
                 "defaults": DEFAULTS,
                 "commands": [
                     {
                         "name": "generate",
-                        "usage": "scaffold.py generate --root <group-id> --appname <app-name> [--target <path>] [--java-version 25] [--skeleton off|on] [--wrapper auto|skip|required] [--force] [--no-validate]",
+                        "usage": "scaffold.py generate --root <group-id> --appname <app-name> [--target <path>] [--java-version 25] [--skeleton off|on] [--convention basic|strict|off] [--wrapper auto|skip|required] [--force] [--no-validate]",
                     },
                     {
                         "name": "validate",
-                        "usage": "scaffold.py validate --root <group-id> --appname <app-name> [--target <path>] [--java-version 25] [--skeleton off|on] [--strict-wrapper]",
+                        "usage": "scaffold.py validate --root <group-id> --appname <app-name> [--target <path>] [--java-version 25] [--skeleton off|on] [--convention basic|strict|off] [--strict-wrapper]",
                     },
                 ],
             },
@@ -1152,6 +1552,7 @@ def parse(argv: list[str]) -> tuple[str, argparse.Namespace]:
     parser.add_argument("--appname")
     parser.add_argument("--java-version", default=DEFAULTS["java_version"])
     parser.add_argument("--skeleton", default="off", choices=["on", "off"])
+    parser.add_argument("--convention", default="basic", choices=["off", "basic", "strict"])
     parser.add_argument("--target", default=".")
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--no-validate", action="store_true")
@@ -1179,7 +1580,7 @@ def main(argv: list[str]) -> int:
             2,
         )
 
-    argument_errors = validate_arguments(args.root, args.appname, args.java_version, args.skeleton)
+    argument_errors = validate_arguments(args.root, args.appname, args.java_version, args.skeleton, args.convention)
     if argument_errors:
         return emit(
             {
@@ -1187,7 +1588,7 @@ def main(argv: list[str]) -> int:
                 "command": command,
                 "error": {"code": "INVALID_ARGUMENT", "message": "; ".join(argument_errors)},
                 "fix": "Provide --root and --appname using Java naming conventions.",
-                "next_actions": next_actions(args.root, args.appname, args.target, args.skeleton),
+                "next_actions": next_actions(args.root, args.appname, args.target, args.skeleton, args.convention),
             },
             2,
         )
@@ -1201,6 +1602,7 @@ def main(argv: list[str]) -> int:
             java_version=args.java_version,
             skeleton=args.skeleton,
             strict_wrapper=args.strict_wrapper,
+            convention=args.convention,
         )
         return emit(
             {
@@ -1211,9 +1613,10 @@ def main(argv: list[str]) -> int:
                     "root": args.root,
                     "appname": args.appname,
                     "skeleton": args.skeleton,
+                    "convention": args.convention,
                     "validation": validation,
                 },
-                "next_actions": next_actions(args.root, args.appname, str(target), args.skeleton),
+                "next_actions": next_actions(args.root, args.appname, str(target), args.skeleton, args.convention),
             },
             0 if validation["ok"] else 1,
         )
@@ -1236,6 +1639,7 @@ def main(argv: list[str]) -> int:
             java_version=args.java_version,
             skeleton=args.skeleton,
             strict_wrapper=args.wrapper == "required",
+            convention=args.convention,
         )
 
     ok = wrapper.get("status") != "error" and (validation is None or validation["ok"])
@@ -1248,11 +1652,12 @@ def main(argv: list[str]) -> int:
                 "appname": args.appname,
                 "java_version": args.java_version,
                 "skeleton": args.skeleton,
+                "convention": args.convention,
                 "generation": generation,
                 "wrapper": wrapper,
                 "validation": validation,
             },
-            "next_actions": next_actions(args.root, args.appname, str(target), args.skeleton),
+            "next_actions": next_actions(args.root, args.appname, str(target), args.skeleton, args.convention),
         },
         0 if ok else 1,
     )

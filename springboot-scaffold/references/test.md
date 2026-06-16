@@ -8,7 +8,7 @@ package {$ROOT}.domain.order.service;
 import {$ROOT}.domain.order.dto.OrderDto;
 import {$ROOT}.domain.order.entity.Order;
 import {$ROOT}.domain.order.repository.OrderRepository;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("OrderService")
 class OrderServiceTest {
 
     @Mock
@@ -31,12 +32,9 @@ class OrderServiceTest {
     @InjectMocks
     private OrderService orderService;
 
-    @BeforeEach
-    void setUp() {
-    }
-
     @Test
-    void findAll_ShouldReturnOrders() {
+    @DisplayName("주문 목록이 있으면 주문 DTO 목록을 반환한다")
+    void findAll_whenOrdersExist_returnsOrderDtos() {
         // given
         Order order = Order.builder()
             .id(1L)
@@ -55,7 +53,8 @@ class OrderServiceTest {
     }
 
     @Test
-    void findById_WhenOrderExists_ShouldReturnOrder() {
+    @DisplayName("주문이 있으면 주문 DTO를 반환한다")
+    void findById_whenOrderExists_returnsOrderDto() {
         // given
         Order order = Order.builder()
             .id(1L)
@@ -74,7 +73,8 @@ class OrderServiceTest {
     }
 
     @Test
-    void save_ShouldReturnSavedOrder() {
+    @DisplayName("주문 생성 요청이 유효하면 저장된 주문 DTO를 반환한다")
+    void save_whenRequestIsValid_returnsSavedOrderDto() {
         // given
         OrderDto dto = OrderDto.builder()
             .productName("New Product")
